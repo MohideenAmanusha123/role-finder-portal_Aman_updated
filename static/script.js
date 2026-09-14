@@ -264,6 +264,14 @@ function renderResults(data) {
 resetButton.addEventListener("click", () => {
   fileInput.value = ""; currentFile = null; lastAnalysisData = null; pendingEditedData = null;
   fileStatus.hidden = true; results.hidden = true; intake.hidden = false; confirmPanel.hidden = true; previewPanel.hidden = true;
+  errorMessage.hidden = true; errorMessage.textContent = "";
+  downloadError.hidden = true; downloadError.textContent = "";
+  generateError.hidden = true; generateError.textContent = "";
+  generateNote.hidden = true; generateNote.textContent = "";
+  customRoleNote.hidden = true; customRoleNote.textContent = "";
+  focusPanel.hidden = true; planPanel.hidden = true; interviewPanel.hidden = true; deltaPanel.hidden = true;
+  if (jobDescription) jobDescription.value = "";
+  if (customRoleName) customRoleName.value = "";
 });
 downloadButton.addEventListener("click", async () => {
   if (!lastAnalysisData) return;
@@ -290,12 +298,15 @@ function getApplications() {
   return result;
 }
 function editorPayload(format=null) {
+  if (!lastAnalysisData) return { resume_text: "", matched_skills: [], confirmed_skills: [], applications: {}, filename: "resume", format };
+
+  const targetPlan = lastAnalysisData.target_plan || { matched_skills: [] };
   return {
-    resume_text: lastAnalysisData.resume_text,
-    matched_skills: lastAnalysisData.target_plan.matched_skills,
+    resume_text: lastAnalysisData.resume_text || "",
+    matched_skills: targetPlan.matched_skills || [],
     confirmed_skills: getConfirmedSkills(),
     applications: getApplications(),
-    filename: lastAnalysisData.filename,
+    filename: lastAnalysisData.filename || "resume",
     format
   };
 }
@@ -352,3 +363,1071 @@ customRoleButton.addEventListener("click", async () => {
 // Restore role from URL query string.
 const initialRole = new URLSearchParams(location.search).get("role");
 if (initialRole && Array.from(targetRoleSelect.options).some(o => o.value === initialRole)) targetRoleSelect.value = initialRole;
+
+/* =========================================================
+   ATS RESUME BUILDER
+========================================================= */
+
+let atsExperienceCount = 0;
+let atsEducationCount = 0;
+let atsProjectCount = 0;
+let atsSkillCount = 0;
+let atsCertificationCount = 0;
+let atsAchievementCount = 0;
+
+function bindATSBuilderActions() {
+    const addSkillButton = document.getElementById("add-ats-skill");
+    if (addSkillButton && !addSkillButton.dataset.bound) {
+        addSkillButton.dataset.bound = "true";
+        addSkillButton.addEventListener("click", addATSSkill);
+    }
+
+    const addExperienceButton = document.getElementById("add-ats-experience");
+    if (addExperienceButton && !addExperienceButton.dataset.bound) {
+        addExperienceButton.dataset.bound = "true";
+        addExperienceButton.addEventListener("click", addATSExperience);
+    }
+
+    const addEducationButton = document.getElementById("add-ats-education");
+    if (addEducationButton && !addEducationButton.dataset.bound) {
+        addEducationButton.dataset.bound = "true";
+        addEducationButton.addEventListener("click", addATSEducation);
+    }
+
+    const addProjectButton = document.getElementById("add-ats-project");
+    if (addProjectButton && !addProjectButton.dataset.bound) {
+        addProjectButton.dataset.bound = "true";
+        addProjectButton.addEventListener("click", addATSProject);
+    }
+
+    const addCertificationButton = document.getElementById("add-ats-certification");
+    if (addCertificationButton && !addCertificationButton.dataset.bound) {
+        addCertificationButton.dataset.bound = "true";
+        addCertificationButton.addEventListener("click", addATSCertification);
+    }
+
+    const addAchievementButton = document.getElementById("add-ats-achievement");
+    if (addAchievementButton && !addAchievementButton.dataset.bound) {
+        addAchievementButton.dataset.bound = "true";
+        addAchievementButton.addEventListener("click", addATSAchievement);
+    }
+
+    const previewButton = document.getElementById("preview-ats-resume");
+    if (previewButton && !previewButton.dataset.bound) {
+        previewButton.dataset.bound = "true";
+        previewButton.addEventListener("click", previewATSResume);
+    }
+
+    const pdfButton = document.getElementById("download-ats-pdf");
+    if (pdfButton && !pdfButton.dataset.bound) {
+        pdfButton.dataset.bound = "true";
+        pdfButton.addEventListener("click", () => downloadATSResume("pdf"));
+    }
+
+    const docxButton = document.getElementById("download-ats-docx");
+    if (docxButton && !docxButton.dataset.bound) {
+        docxButton.dataset.bound = "true";
+        docxButton.addEventListener("click", () => downloadATSResume("docx"));
+    }
+}
+
+/* ---------------------------------------------------------
+   OPEN / CLOSE
+--------------------------------------------------------- */
+
+function openATSResumeBuilder() {
+
+    const modal = document.getElementById(
+        "atsResumeModal"
+    );
+
+    if (!modal) return;
+
+    modal.hidden = false;
+    modal.style.display = "flex";
+
+    bindATSBuilderActions();
+    initializeATSBuilder();
+}
+
+
+function closeATSResumeBuilder() {
+
+    const modal = document.getElementById(
+        "atsResumeModal"
+    );
+
+    if (!modal) return;
+
+    modal.hidden = true;
+    modal.style.display = "none";
+
+    const builderForm = document.getElementById("ats-resume-builder-form");
+    if (builderForm) builderForm.reset();
+
+    const resultPanel = document.getElementById("atsScorePanel");
+    if (resultPanel) resultPanel.hidden = true;
+
+    const errorBox = document.getElementById("ats-builder-error");
+    if (errorBox) {
+        errorBox.hidden = true;
+        errorBox.textContent = "";
+    }
+}
+
+
+/* ---------------------------------------------------------
+   INITIALIZE
+--------------------------------------------------------- */
+
+function initializeATSBuilder() {
+
+    const skills =
+        document.getElementById(
+            "atsSkillsContainer"
+        );
+
+    if (
+        skills &&
+        skills.children.length === 0
+    ) {
+        addATSSkill();
+        addATSSkill();
+        addATSSkill();
+    }
+
+    const experience =
+        document.getElementById(
+            "atsExperienceContainer"
+        );
+
+    if (
+        experience &&
+        experience.children.length === 0
+    ) {
+        addATSExperience();
+    }
+
+    const education =
+        document.getElementById(
+            "atsEducationContainer"
+        );
+
+    if (
+        education &&
+        education.children.length === 0
+    ) {
+        addATSEducation();
+    }
+
+    const projects =
+        document.getElementById(
+            "atsProjectsContainer"
+        );
+
+    if (
+        projects &&
+        projects.children.length === 0
+    ) {
+        addATSProject();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SKILLS
+--------------------------------------------------------- */
+
+function addATSSkill() {
+
+    atsSkillCount++;
+
+    const container =
+        document.getElementById(
+            "atsSkillsContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-inline-item";
+
+    wrapper.innerHTML = `
+        <input
+            type="text"
+            class="ats-skill"
+            placeholder="Skill"
+        >
+
+        <button
+            type="button"
+            class="remove-button"
+            onclick="this.parentElement.remove()"
+        >
+            Remove
+        </button>
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   EXPERIENCE
+--------------------------------------------------------- */
+
+function addATSExperience() {
+
+    atsExperienceCount++;
+
+    const container =
+        document.getElementById(
+            "atsExperienceContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-repeat-card";
+
+    wrapper.innerHTML = `
+
+        <div class="repeat-card-header">
+
+            <strong>
+                Experience ${atsExperienceCount}
+            </strong>
+
+            <button
+                type="button"
+                class="remove-button"
+                onclick="this.parentElement.parentElement.remove()"
+            >
+                Remove
+            </button>
+
+        </div>
+
+        <div class="builder-grid">
+
+            <input
+                class="ats-job-title"
+                type="text"
+                placeholder="Job Title"
+            >
+
+            <input
+                class="ats-company"
+                type="text"
+                placeholder="Company"
+            >
+
+            <input
+                class="ats-exp-location"
+                type="text"
+                placeholder="Location"
+            >
+
+            <input
+                class="ats-start-date"
+                type="text"
+                placeholder="Start Date"
+            >
+
+            <input
+                class="ats-end-date"
+                type="text"
+                placeholder="End Date / Present"
+            >
+
+        </div>
+
+        <textarea
+            class="ats-exp-description"
+            rows="5"
+            placeholder="Responsibilities and achievements. Use one bullet per line."
+        ></textarea>
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   EDUCATION
+--------------------------------------------------------- */
+
+function addATSEducation() {
+
+    atsEducationCount++;
+
+    const container =
+        document.getElementById(
+            "atsEducationContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-repeat-card";
+
+    wrapper.innerHTML = `
+
+        <div class="repeat-card-header">
+
+            <strong>
+                Education ${atsEducationCount}
+            </strong>
+
+            <button
+                type="button"
+                class="remove-button"
+                onclick="this.parentElement.parentElement.remove()"
+            >
+                Remove
+            </button>
+
+        </div>
+
+        <div class="builder-grid">
+
+            <input
+                class="ats-degree"
+                type="text"
+                placeholder="Degree"
+            >
+
+            <input
+                class="ats-institution"
+                type="text"
+                placeholder="Institution"
+            >
+
+            <input
+                class="ats-edu-location"
+                type="text"
+                placeholder="Location"
+            >
+
+            <input
+                class="ats-edu-start"
+                type="text"
+                placeholder="Start Date"
+            >
+
+            <input
+                class="ats-edu-end"
+                type="text"
+                placeholder="End Date"
+            >
+
+            <input
+                class="ats-grade"
+                type="text"
+                placeholder="GPA / Percentage"
+            >
+
+        </div>
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   PROJECTS
+--------------------------------------------------------- */
+
+function addATSProject() {
+
+    atsProjectCount++;
+
+    const container =
+        document.getElementById(
+            "atsProjectsContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-repeat-card";
+
+    wrapper.innerHTML = `
+
+        <div class="repeat-card-header">
+
+            <strong>
+                Project ${atsProjectCount}
+            </strong>
+
+            <button
+                type="button"
+                class="remove-button"
+                onclick="this.parentElement.parentElement.remove()"
+            >
+                Remove
+            </button>
+
+        </div>
+
+        <input
+            class="ats-project-name"
+            type="text"
+            placeholder="Project Name"
+        >
+
+        <textarea
+            class="ats-project-description"
+            rows="4"
+            placeholder="Project description"
+        ></textarea>
+
+        <input
+            class="ats-project-technologies"
+            type="text"
+            placeholder="Technologies (comma separated)"
+        >
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   CERTIFICATIONS
+--------------------------------------------------------- */
+
+function addATSCertification() {
+
+    atsCertificationCount++;
+
+    const container =
+        document.getElementById(
+            "atsCertificationsContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-inline-item";
+
+    wrapper.innerHTML = `
+
+        <input
+            type="text"
+            class="ats-certification"
+            placeholder="Certification"
+        >
+
+        <button
+            type="button"
+            class="remove-button"
+            onclick="this.parentElement.remove()"
+        >
+            Remove
+        </button>
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   ACHIEVEMENTS
+--------------------------------------------------------- */
+
+function addATSAchievement() {
+
+    atsAchievementCount++;
+
+    const container =
+        document.getElementById(
+            "atsAchievementsContainer"
+        );
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "builder-inline-item";
+
+    wrapper.innerHTML = `
+
+        <input
+            type="text"
+            class="ats-achievement"
+            placeholder="Achievement"
+        >
+
+        <button
+            type="button"
+            class="remove-button"
+            onclick="this.parentElement.remove()"
+        >
+            Remove
+        </button>
+    `;
+
+    container.appendChild(wrapper);
+}
+
+
+/* ---------------------------------------------------------
+   COLLECT DATA
+--------------------------------------------------------- */
+
+function collectATSResumeData() {
+
+    const getValue = (id) => {
+
+        const element =
+            document.getElementById(id);
+
+        return element
+            ? element.value.trim()
+            : "";
+    };
+
+
+    const skills = [
+        ...document.querySelectorAll(
+            ".ats-skill"
+        )
+    ]
+    .map(
+        element => element.value.trim()
+    )
+    .filter(Boolean);
+
+
+    const experience = [
+        ...document.querySelectorAll(
+            "#atsExperienceContainer .builder-repeat-card"
+        )
+    ]
+    .map(card => {
+
+        return {
+
+            job_title:
+                card.querySelector(
+                    ".ats-job-title"
+                )?.value.trim() || "",
+
+            company:
+                card.querySelector(
+                    ".ats-company"
+                )?.value.trim() || "",
+
+            location:
+                card.querySelector(
+                    ".ats-exp-location"
+                )?.value.trim() || "",
+
+            start_date:
+                card.querySelector(
+                    ".ats-start-date"
+                )?.value.trim() || "",
+
+            end_date:
+                card.querySelector(
+                    ".ats-end-date"
+                )?.value.trim() || "",
+
+            description:
+                card.querySelector(
+                    ".ats-exp-description"
+                )?.value.trim() || "",
+        };
+    });
+
+
+    const education = [
+        ...document.querySelectorAll(
+            "#atsEducationContainer .builder-repeat-card"
+        )
+    ]
+    .map(card => {
+
+        return {
+
+            degree:
+                card.querySelector(
+                    ".ats-degree"
+                )?.value.trim() || "",
+
+            institution:
+                card.querySelector(
+                    ".ats-institution"
+                )?.value.trim() || "",
+
+            location:
+                card.querySelector(
+                    ".ats-edu-location"
+                )?.value.trim() || "",
+
+            start_date:
+                card.querySelector(
+                    ".ats-edu-start"
+                )?.value.trim() || "",
+
+            end_date:
+                card.querySelector(
+                    ".ats-edu-end"
+                )?.value.trim() || "",
+
+            grade:
+                card.querySelector(
+                    ".ats-grade"
+                )?.value.trim() || "",
+        };
+    });
+
+
+    const projects = [
+        ...document.querySelectorAll(
+            "#atsProjectsContainer .builder-repeat-card"
+        )
+    ]
+    .map(card => {
+
+        return {
+
+            name:
+                card.querySelector(
+                    ".ats-project-name"
+                )?.value.trim() || "",
+
+            description:
+                card.querySelector(
+                    ".ats-project-description"
+                )?.value.trim() || "",
+
+            technologies:
+                (
+                    card.querySelector(
+                        ".ats-project-technologies"
+                    )?.value || ""
+                )
+                .split(",")
+                .map(value => value.trim())
+                .filter(Boolean),
+        };
+    });
+
+
+    const certifications = [
+        ...document.querySelectorAll(
+            ".ats-certification"
+        )
+    ]
+    .map(
+        element => element.value.trim()
+    )
+    .filter(Boolean);
+
+
+    const achievements = [
+        ...document.querySelectorAll(
+            ".ats-achievement"
+        )
+    ]
+    .map(
+        element => element.value.trim()
+    )
+    .filter(Boolean);
+
+
+    const languages =
+        getValue("ats_languages")
+            .split(",")
+            .map(
+                value => value.trim()
+            )
+            .filter(Boolean);
+
+
+    return {
+
+        personal: {
+
+            name:
+                getValue("ats_name"),
+
+            title:
+                getValue("ats_title"),
+
+            email:
+                getValue("ats_email"),
+
+            phone:
+                getValue("ats_phone"),
+
+            location:
+                getValue("ats_location"),
+
+            linkedin:
+                getValue("ats_linkedin"),
+
+            github:
+                getValue("ats_github"),
+
+            portfolio:
+                getValue("ats_portfolio"),
+        },
+
+        summary:
+            getValue("ats_summary"),
+
+        skills,
+
+        experience,
+
+        education,
+
+        projects,
+
+        certifications,
+
+        achievements,
+
+        languages,
+    };
+}
+
+
+/* ---------------------------------------------------------
+   PREVIEW / ATS CHECK
+--------------------------------------------------------- */
+
+async function previewATSResume() {
+
+    const resume =
+        collectATSResumeData();
+
+    if (!resume.personal.name) {
+
+        alert(
+            "Please enter your full name."
+        );
+
+        return;
+    }
+
+
+    const jobDescription =
+        document.getElementById(
+            "ats_job_description"
+        )?.value.trim() || "";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/preview-ats-resume",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        resume,
+                        job_description:
+                            jobDescription,
+                    }),
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!result.success) {
+
+            alert(
+                result.error ||
+                "Could not generate preview."
+            );
+
+            return;
+        }
+
+
+        displayATSResult(result);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Unable to connect to the server."
+        );
+    }
+}
+
+
+/* ---------------------------------------------------------
+   DISPLAY ATS RESULT
+--------------------------------------------------------- */
+
+function displayATSResult(result) {
+
+    const scorePanel =
+        document.getElementById(
+            "atsScorePanel"
+        );
+
+    const scoreValue =
+        document.getElementById(
+            "atsScoreValue"
+        );
+
+    const scoreMessage =
+        document.getElementById(
+            "atsScoreMessage"
+        );
+
+
+    if (scorePanel) {
+
+        scorePanel.style.display =
+            "flex";
+    }
+
+
+    const score =
+        result.ats?.score || 0;
+
+
+    if (scoreValue) {
+
+        scoreValue.textContent =
+            score;
+    }
+
+
+    if (scoreMessage) {
+
+        if (score >= 85) {
+
+            scoreMessage.textContent =
+                "Strong ATS-friendly structure.";
+
+        } else if (score >= 70) {
+
+            scoreMessage.textContent =
+                "Good structure with some areas to improve.";
+
+        } else {
+
+            scoreMessage.textContent =
+                "Several resume sections should be improved.";
+        }
+    }
+
+
+    const recommendationPanel =
+        document.getElementById(
+            "atsRecommendations"
+        );
+
+    const recommendationList =
+        document.getElementById(
+            "atsRecommendationsList"
+        );
+
+
+    if (
+        recommendationPanel &&
+        recommendationList
+    ) {
+
+        recommendationList.innerHTML = "";
+
+        const recommendations =
+            result.ats?.recommendations || [];
+
+
+        recommendations.forEach(
+            recommendation => {
+
+                const li =
+                    document.createElement("li");
+
+                li.textContent =
+                    recommendation;
+
+                recommendationList.appendChild(
+                    li
+                );
+            }
+        );
+
+
+        if (recommendations.length) {
+
+            recommendationPanel.style.display =
+                "block";
+
+        } else {
+
+            recommendationPanel.style.display =
+                "none";
+        }
+    }
+
+
+    const preview =
+        document.getElementById(
+            "atsResumePreview"
+        );
+
+    const previewText =
+        document.getElementById(
+            "atsResumePreviewText"
+        );
+
+
+    if (preview && previewText) {
+
+        previewText.textContent =
+            result.resume_text || "";
+
+        preview.style.display =
+            "block";
+    }
+
+
+    const downloads =
+        document.getElementById(
+            "atsDownloadActions"
+        );
+
+    if (downloads) {
+
+        downloads.style.display =
+            "flex";
+    }
+}
+
+
+/* ---------------------------------------------------------
+   DOWNLOAD
+--------------------------------------------------------- */
+
+async function downloadATSResume(format) {
+
+    const resume =
+        collectATSResumeData();
+
+
+    if (!resume.personal.name) {
+
+        alert(
+            "Please enter your full name."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/download-ats-resume",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        resume,
+                        format,
+                    }),
+                }
+            );
+
+
+        if (!response.ok) {
+
+            const error =
+                await response.json();
+
+            alert(
+                error.error ||
+                "Could not generate the resume."
+            );
+
+            return;
+        }
+
+
+        const blob =
+            await response.blob();
+
+
+        const url =
+            window.URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+
+
+        const extension =
+            format === "pdf"
+                ? "pdf"
+                : "docx";
+
+
+        const safeName =
+            resume.personal.name
+                .replace(
+                    /[^a-zA-Z0-9_-]+/g,
+                    "_"
+                )
+                .replace(
+                    /^_+|_+$/g,
+                    ""
+                );
+
+
+        link.download =
+            `${safeName || "ATS_Resume"}_ATS_Resume.${extension}`;
+
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Unable to download the resume."
+        );
+    }
+}

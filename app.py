@@ -1,19 +1,50 @@
 """
 app.py
+
 Flask web portal for resume analysis, JD matching, custom roles, and resume generation.
 """
+
 import os
 import re
 import tempfile
 
 from flask import Flask, render_template, request, jsonify, send_file
-from resume_matcher import analyze_resume, analyze_text, UnsupportedFileType, ScannedPDFError, find_skills
-from roles_data import ROLES, SKILL_VOCABULARY, SKILL_APPLICATIONS, add_custom_role
+
+from resume_builder import (
+    normalize_resume_data,
+    build_resume_text,
+    calculate_builder_ats_score,
+    generate_ats_pdf,
+    generate_ats_docx,
+)
+
+from resume_matcher import (
+    analyze_resume,
+    analyze_text,
+    UnsupportedFileType,
+    ScannedPDFError,
+    find_skills,
+)
+
+from roles_data import (
+    ROLES,
+    SKILL_VOCABULARY,
+    SKILL_APPLICATIONS,
+    add_custom_role,
+)
+
 from pdf_report import build_pdf_report
-from resume_editor import build_edited_resume, render_edited_resume_pdf, render_edited_resume_docx
+
+from resume_editor import (
+    build_edited_resume,
+    render_edited_resume_pdf,
+    render_edited_resume_docx,
+)
 
 app = Flask(__name__)
+
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
 
 
@@ -25,7 +56,155 @@ def safe_base(filename):
 def improved_filename(filename, ext):
     return f"{safe_base(filename)}_improved_resume.{ext}"
 
+@app.route("/ats-resume-builder", methods=["POST"])
+def ats_resume_builder():
 
+    try:
+        data = request.get_json(silent=True) or {}
+
+        resume_data = normalize_resume_data(
+            data.get("resume", data)
+        )
+
+        job_description = data.get(
+            "job_description",
+            ""
+        )
+
+        ats_result = calculate_builder_ats_score(
+            resume_data,
+            job_description
+        )
+
+        return jsonify({
+            "success": True,
+            "resume": resume_data,
+            "resume_text": build_resume_text(
+                resume_data
+            ),
+            "ats": ats_result,
+        })
+
+    except Exception as exc:
+
+        return jsonify({
+            "success": False,
+            "error": str(exc),
+        }), 400
+
+
+@app.route("/preview-ats-resume", methods=["POST"])
+def preview_ats_resume():
+
+    try:
+
+        data = request.get_json(silent=True) or {}
+
+        resume_data = normalize_resume_data(
+            data.get("resume", data)
+        )
+
+        job_description = data.get(
+            "job_description",
+            ""
+        )
+
+        ats_result = calculate_builder_ats_score(
+            resume_data,
+            job_description
+        )
+
+        return jsonify({
+            "success": True,
+            "resume_text": build_resume_text(
+                resume_data
+            ),
+            "ats": ats_result,
+        })
+
+    except Exception as exc:
+
+        return jsonify({
+            "success": False,
+            "error": str(exc),
+        }), 400
+
+
+@app.route("/download-ats-resume", methods=["POST"])
+def download_ats_resume():
+
+    try:
+
+        data = request.get_json(silent=True) or {}
+
+        resume_data = normalize_resume_data(
+            data.get("resume", data)
+        )
+
+        output_format = (
+            data.get("format", "pdf")
+            .lower()
+        )
+
+        name = (
+            resume_data["personal"]["name"]
+            or "ATS_Resume"
+        )
+
+        # Safe filename
+        safe_name = re.sub(
+            r"[^A-Za-z0-9_-]+",
+            "_",
+            name
+        ).strip("_")
+
+        if not safe_name:
+            safe_name = "ATS_Resume"
+
+        if output_format == "pdf":
+
+            file_stream = generate_ats_pdf(
+                resume_data
+            )
+
+            return send_file(
+                file_stream,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=(
+                    f"{safe_name}_ATS_Resume.pdf"
+                ),
+            )
+
+        if output_format == "docx":
+
+            file_stream = generate_ats_docx(
+                resume_data
+            )
+
+            return send_file(
+                file_stream,
+                mimetype=(
+                    "application/vnd.openxmlformats-"
+                    "officedocument.wordprocessingml.document"
+                ),
+                as_attachment=True,
+                download_name=(
+                    f"{safe_name}_ATS_Resume.docx"
+                ),
+            )
+
+        return jsonify({
+            "success": False,
+            "error": "Unsupported format. Use PDF or DOCX.",
+        }), 400
+
+    except Exception as exc:
+
+        return jsonify({
+            "success": False,
+            "error": str(exc),
+        }), 500
 @app.route("/")
 def index():
     return render_template("index.html", roles=list(ROLES.keys()), applications=SKILL_APPLICATIONS)

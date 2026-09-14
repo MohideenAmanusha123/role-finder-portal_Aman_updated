@@ -3,135 +3,1442 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Role Finder — resume intelligence</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+  >
 </head>
+
 <body>
-<header class="masthead"><span class="masthead__mark">Role Finder</span></header>
+
+<header class="masthead">
+  <span class="masthead__mark">Role Finder</span>
+</header>
+
 
 <main>
-<section id="intake" class="intake">
-  <div class="intake__grid">
-    <div class="intake__copy">
-      <h1 class="intake__headline">Find the role your resume already qualifies for.</h1>
-      <p class="intake__sub">Upload a resume, compare it with roles or a pasted job description, then preview every improvement before you download anything.</p>
 
-      <div class="mode-switch" role="tablist" aria-label="Analysis mode">
-        <button type="button" class="mode-switch__button is-active" data-mode="roles">Role matching</button>
-        <button type="button" class="mode-switch__button" data-mode="jd">Paste a job description</button>
+  <!-- =========================================================
+       EXISTING RESUME ANALYSIS SECTION
+       ========================================================= -->
+
+  <section id="intake" class="intake">
+
+    <div class="intake__grid">
+
+      <div class="intake__copy">
+
+        <h1 class="intake__headline">
+          Find the role your resume already qualifies for.
+        </h1>
+
+        <p class="intake__sub">
+          Upload a resume, compare it with roles or a pasted job
+          description, then preview every improvement before you
+          download anything.
+        </p>
+
+
+        <!-- MODE SWITCH -->
+
+        <div
+          class="mode-switch"
+          role="tablist"
+          aria-label="Analysis mode"
+        >
+
+          <button
+            type="button"
+            class="mode-switch__button is-active"
+            data-mode="roles"
+          >
+            Role matching
+          </button>
+
+          <button
+            type="button"
+            class="mode-switch__button"
+            data-mode="jd"
+          >
+            Paste a job description
+          </button>
+
+        </div>
+
+
+        <!-- TARGET ROLE -->
+
+        <label
+          class="role-select-label"
+          for="target-role-select"
+        >
+          Which role are you aiming for? (optional)
+        </label>
+
+        <select
+          id="target-role-select"
+          class="role-select"
+        >
+
+          <option value="">
+            Not sure yet — just show me matches
+          </option>
+
+          {% for r in roles %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+
+        </select>
+
+
+        <!-- JOB DESCRIPTION -->
+
+        <div
+          id="jd-input-panel"
+          class="jd-input-panel"
+          hidden
+        >
+
+          <label
+            class="role-select-label"
+            for="job-description"
+          >
+            Paste the job description
+          </label>
+
+          <textarea
+            id="job-description"
+            class="text-input"
+            rows="9"
+            placeholder="Paste the complete JD here. Role Finder will extract recognized skills and compare them with your resume."
+          ></textarea>
+
+
+          <div class="custom-role-row">
+
+            <input
+              id="custom-role-name"
+              class="text-input text-input--small"
+              type="text"
+              maxlength="80"
+              placeholder="Optional custom role name"
+            >
+
+            <button
+              id="save-custom-role"
+              class="reset-button"
+              type="button"
+            >
+              Save / update custom role
+            </button>
+
+          </div>
+
+
+          <p
+            id="custom-role-note"
+            class="confirm-panel__note"
+            hidden
+          ></p>
+
+        </div>
+
+
+        <!-- RESUME UPLOAD -->
+
+        <form
+          id="upload-form"
+          class="dropzone"
+          aria-label="Upload resume"
+        >
+
+          <input
+            type="file"
+            id="file-input"
+            name="resume"
+            accept=".pdf,.docx,.txt"
+            hidden
+          >
+
+          <div
+            class="dropzone__inner"
+            id="dropzone-inner"
+          >
+
+            <svg
+              class="dropzone__icon"
+              width="36"
+              height="36"
+              viewBox="0 0 40 40"
+              fill="none"
+            >
+
+              <path
+                d="M20 4L20 26M20 4L12 12M20 4L28 12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M6 26V32C6 33.1046 6.89543 34 8 34H32C33.1046 34 34 33.1046 34 32V26"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+            </svg>
+
+
+            <p class="dropzone__label">
+              Drop your resume here, or
+              <span class="dropzone__browse">browse</span>
+            </p>
+
+            <p class="dropzone__hint">
+              PDF, DOCX, or TXT · up to 8 MB
+            </p>
+
+          </div>
+
+        </form>
+
+
+        <p
+          id="file-status"
+          class="file-status"
+          hidden
+        ></p>
+
+        <p
+          id="error-message"
+          class="error-message"
+          hidden
+        ></p>
+
       </div>
 
-      <label class="role-select-label" for="target-role-select">Which role are you aiming for? (optional)</label>
-      <select id="target-role-select" class="role-select">
-        <option value="">Not sure yet — just show me matches</option>
-        {% for r in roles %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
-      </select>
 
-      <div id="jd-input-panel" class="jd-input-panel" hidden>
-        <label class="role-select-label" for="job-description">Paste the job description</label>
-        <textarea id="job-description" class="text-input" rows="9" placeholder="Paste the complete JD here. Role Finder will extract recognized skills and compare them with your resume."></textarea>
-        <div class="custom-role-row">
-          <input id="custom-role-name" class="text-input text-input--small" type="text" maxlength="80" placeholder="Optional custom role name">
-          <button id="save-custom-role" class="reset-button" type="button">Save / update custom role</button>
-        </div>
-        <p id="custom-role-note" class="confirm-panel__note" hidden></p>
+      <!-- ROLE PREVIEW -->
+
+      <aside
+        class="role-preview"
+        aria-label="Roles this portal checks against"
+      >
+
+        <p class="role-preview__label">
+          Checked against
+        </p>
+
+        <ul class="role-preview__list">
+
+          {% for r in roles %}
+            <li>{{ r }}</li>
+          {% endfor %}
+
+        </ul>
+
+      </aside>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================================
+       ATS RESUME BUILDER SIDE FEATURE
+       ========================================================= -->
+
+  <section class="feature-card ats-builder-card">
+
+    <div class="feature-card-content">
+
+      <div class="feature-icon">
+        ✨
       </div>
 
-      <form id="upload-form" class="dropzone" aria-label="Upload resume">
-        <input type="file" id="file-input" name="resume" accept=".pdf,.docx,.txt" hidden>
-        <div class="dropzone__inner" id="dropzone-inner">
-          <svg class="dropzone__icon" width="36" height="36" viewBox="0 0 40 40" fill="none">
-            <path d="M20 4L20 26M20 4L12 12M20 4L28 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 26V32C6 33.1046 6.89543 34 8 34H32C33.1046 34 34 33.1046 34 32V26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p class="dropzone__label">Drop your resume here, or <span class="dropzone__browse">browse</span></p>
-          <p class="dropzone__hint">PDF, DOCX, or TXT · up to 8 MB</p>
+      <div class="feature-information">
+
+        <h2>
+          Create ATS-Friendly Resume
+        </h2>
+
+        <p>
+          Create a clean, professional and ATS-friendly
+          resume from scratch. Download it in PDF or Word format.
+        </p>
+
+        <div class="feature-tags">
+
+          <span>ATS Safe</span>
+          <span>PDF</span>
+          <span>Word</span>
+          <span>Single Column</span>
+
         </div>
+
+        <button
+          type="button"
+          class="primary-button"
+          onclick="openATSResumeBuilder()"
+        >
+          Create Resume
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================================
+       ATS RESUME BUILDER MODAL
+       ========================================================= -->
+
+  <div
+    id="atsResumeModal"
+    class="ats-modal"
+    hidden
+  >
+
+    <div
+      class="ats-modal__overlay"
+      onclick="closeATSResumeBuilder()"
+    ></div>
+
+
+    <div
+      class="ats-modal__content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ats-builder-title"
+    >
+
+      <!-- HEADER -->
+
+      <div class="ats-modal__header">
+
+        <div>
+
+          <p class="ats-builder__eyebrow">
+            RESUME BUILDER
+          </p>
+
+          <h2 id="ats-builder-title">
+            Create ATS-Friendly Resume
+          </h2>
+
+          <p>
+            Build a clean, machine-readable resume using
+            ATS-safe formatting.
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          class="ats-modal__close"
+          onclick="closeATSResumeBuilder()"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <!-- BUILDER FORM -->
+
+      <form id="ats-resume-builder-form">
+
+        <!-- PERSONAL INFORMATION -->
+
+        <section class="builder-section">
+
+          <h3>
+            Personal Information
+          </h3>
+
+          <div class="builder-grid">
+
+            <div class="builder-field">
+
+              <label for="ats-name">
+                Full Name *
+              </label>
+
+              <input
+                id="ats_name"
+                name="name"
+                type="text"
+                placeholder="John Doe"
+                required
+              >
+
+            </div>
+
+
+            <div class="builder-field">
+
+              <label for="ats-email">
+                Email *
+              </label>
+
+              <input
+                id="ats_email"
+                name="email"
+                type="email"
+                placeholder="john@example.com"
+                required
+              >
+
+            </div>
+
+
+            <div class="builder-field">
+
+              <label for="ats-phone">
+                Phone
+              </label>
+
+              <input
+                id="ats_phone"
+                name="phone"
+                type="text"
+                placeholder="+91 9876543210"
+              >
+
+            </div>
+
+
+            <div class="builder-field">
+
+              <label for="ats-location">
+                Location
+              </label>
+
+              <input
+                id="ats_location"
+                name="location"
+                type="text"
+                placeholder="Chennai, India"
+              >
+
+            </div>
+
+
+            <div class="builder-field">
+
+              <label for="ats-linkedin">
+                LinkedIn
+              </label>
+
+              <input
+                id="ats_linkedin"
+                name="linkedin"
+                type="text"
+                placeholder="linkedin.com/in/yourname"
+              >
+
+            </div>
+
+
+            <div class="builder-field">
+
+              <label for="ats-website">
+                Portfolio / Website
+              </label>
+
+              <input
+                id="ats_portfolio"
+                name="website"
+                type="text"
+                placeholder="yourwebsite.com"
+              >
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- PROFESSIONAL SUMMARY -->
+
+        <section class="builder-section">
+
+          <h3>
+            Professional Summary
+          </h3>
+
+          <div class="builder-field">
+
+            <label for="ats-summary">
+              Summary
+            </label>
+
+            <textarea
+              id="ats_summary"
+              name="summary"
+              rows="5"
+              placeholder="Write a concise professional summary..."
+            ></textarea>
+
+          </div>
+
+        </section>
+
+
+        <!-- OPTIONAL JOB DESCRIPTION -->
+
+        <section class="builder-section">
+
+          <h3>
+            Target Job Description
+            <span class="optional-label">
+              Optional
+            </span>
+          </h3>
+
+          <p class="builder-help">
+            Paste a job description to help identify
+            relevant keywords and improve ATS alignment.
+          </p>
+
+          <div class="builder-field">
+
+            <textarea
+              id="ats_job_description"
+              name="job_description"
+              rows="7"
+              placeholder="Paste the target job description here..."
+            ></textarea>
+
+          </div>
+
+        </section>
+
+
+        <!-- SKILLS -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Skills
+              </h3>
+
+              <p class="builder-help">
+                Add technical and professional skills.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-skill"
+            >
+              + Add Skill
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsSkillsContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-list-item">
+
+              <input
+                type="text"
+                name="skills[]"
+                placeholder="Example: SQL"
+              >
+
+              <button
+                type="button"
+                class="remove-builder-item"
+              >
+                ×
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- EXPERIENCE -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Work Experience
+              </h3>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-experience"
+            >
+              + Add Experience
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsExperienceContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-card">
+
+              <div class="builder-grid">
+
+                <div class="builder-field">
+
+                  <label>
+                    Job Title
+                  </label>
+
+                  <input
+                    type="text"
+                    name="experience_title[]"
+                    placeholder="Technical Support Engineer"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Company
+                  </label>
+
+                  <input
+                    type="text"
+                    name="experience_company[]"
+                    placeholder="Company Name"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Location
+                  </label>
+
+                  <input
+                    type="text"
+                    name="experience_location[]"
+                    placeholder="Chennai, India"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Dates
+                  </label>
+
+                  <input
+                    type="text"
+                    name="experience_dates[]"
+                    placeholder="Jul 2024 – Present"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div class="builder-field">
+
+                <label>
+                  Responsibilities / Achievements
+                </label>
+
+                <textarea
+                  name="experience_description[]"
+                  rows="5"
+                  placeholder="Describe your responsibilities, achievements and measurable results..."
+                ></textarea>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="remove-builder-card"
+              >
+                Remove Experience
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- EDUCATION -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Education
+              </h3>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-education"
+            >
+              + Add Education
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsEducationContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-card">
+
+              <div class="builder-grid">
+
+                <div class="builder-field">
+
+                  <label>
+                    Degree
+                  </label>
+
+                  <input
+                    type="text"
+                    name="education_degree[]"
+                    placeholder="Bachelor of Computer Applications"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Institution
+                  </label>
+
+                  <input
+                    type="text"
+                    name="education_institution[]"
+                    placeholder="University / College"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Location
+                  </label>
+
+                  <input
+                    type="text"
+                    name="education_location[]"
+                    placeholder="Chennai, India"
+                  >
+
+                </div>
+
+
+                <div class="builder-field">
+
+                  <label>
+                    Year
+                  </label>
+
+                  <input
+                    type="text"
+                    name="education_year[]"
+                    placeholder="2024"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="remove-builder-card"
+              >
+                Remove Education
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- PROJECTS -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Projects
+              </h3>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-project"
+            >
+              + Add Project
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsProjectsContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-card">
+
+              <div class="builder-field">
+
+                <label>
+                  Project Name
+                </label>
+
+                <input
+                  type="text"
+                  name="project_name[]"
+                  placeholder="Project Name"
+                >
+
+              </div>
+
+
+              <div class="builder-field">
+
+                <label>
+                  Description
+                </label>
+
+                <textarea
+                  name="project_description[]"
+                  rows="4"
+                  placeholder="Describe the project, technologies used and your contribution..."
+                ></textarea>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="remove-builder-card"
+              >
+                Remove Project
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- CERTIFICATIONS -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Certifications
+              </h3>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-certification"
+            >
+              + Add Certification
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsCertificationsContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-list-item">
+
+              <input
+                type="text"
+                name="certifications[]"
+                placeholder="Certification name"
+              >
+
+              <button
+                type="button"
+                class="remove-builder-item"
+              >
+                ×
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ACHIEVEMENTS -->
+
+        <section class="builder-section">
+
+          <div class="builder-section-heading">
+
+            <div>
+
+              <h3>
+                Achievements
+              </h3>
+
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="add-ats-achievement"
+            >
+              + Add Achievement
+            </button>
+
+          </div>
+
+
+          <div
+            id="atsAchievementsContainer"
+            class="builder-list"
+          >
+
+            <div class="builder-list-item">
+
+              <input
+                type="text"
+                name="achievements[]"
+                placeholder="Achievement or award"
+              >
+
+              <button
+                type="button"
+                class="remove-builder-item"
+              >
+                ×
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- LANGUAGES -->
+
+        <section class="builder-section">
+
+          <h3>
+            Languages
+          </h3>
+
+          <div class="builder-field">
+
+            <input
+              id="ats_languages"
+              name="languages"
+              type="text"
+              placeholder="English, Tamil, Hindi"
+            >
+
+          </div>
+
+        </section>
+
+
+        <!-- BUILDER ERROR -->
+
+        <p
+          id="ats-builder-error"
+          class="error-message"
+          hidden
+        ></p>
+
+
+        <!-- BUILDER ACTIONS -->
+
+        <div id="atsDownloadActions" class="ats-builder-actions">
+
+          <button
+            type="button"
+            class="reset-button"
+            onclick="closeATSResumeBuilder()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            id="preview-ats-resume"
+            class="secondary-button"
+          >
+            Preview Resume
+          </button>
+
+          <button
+            type="button"
+            id="download-ats-pdf"
+            class="primary-button"
+          >
+            Download PDF
+          </button>
+
+          <button
+            type="button"
+            id="download-ats-docx"
+            class="primary-button"
+          >
+            Download Word
+          </button>
+
+        </div>
+
       </form>
-      <p id="file-status" class="file-status" hidden></p>
-      <p id="error-message" class="error-message" hidden></p>
+
+
+      <!-- =====================================================
+           ATS SCORE / PREVIEW
+           ===================================================== -->
+
+      <div
+        id="atsScorePanel"
+        class="ats-builder-result"
+        hidden
+      >
+
+        <div class="ats-score-card">
+
+          <p class="ats-score-label">
+            ATS COMPATIBILITY SCORE
+          </p>
+
+          <div
+            id="atsScoreValue"
+            class="ats-builder-score"
+          >
+            0
+          </div>
+
+          <p id="atsScoreMessage"></p>
+
+        </div>
+
+
+        <div
+          id="atsRecommendations"
+          class="ats-builder-recommendations"
+        >
+          <ul id="atsRecommendationsList"></ul>
+        </div>
+
+
+        <div
+          id="atsResumePreview"
+          class="ats-builder-preview"
+        >
+          <pre id="atsResumePreviewText"></pre>
+        </div>
+
+      </div>
+
     </div>
 
-    <aside class="role-preview" aria-label="Roles this portal checks against">
-      <p class="role-preview__label">Checked against</p>
-      <ul class="role-preview__list">
-        {% for r in roles %}<li>{{ r }}</li>{% endfor %}
-      </ul>
-    </aside>
   </div>
-</section>
 
-<section id="loading" class="loading" hidden>
-  <div class="loading__pulse"></div>
-  <div>
-    <p id="loading-message">Reading your resume…</p>
-    <div class="loading-steps">
-      <span data-step="extract">EXTRACT</span><span data-step="detect">DETECT</span><span data-step="score">SCORE</span><span data-step="plan">PLAN</span>
-    </div>
-  </div>
-</section>
 
-<section id="results" class="results" hidden>
-  <div class="results__header">
+  <!-- =========================================================
+       EXISTING LOADING SECTION
+       ========================================================= -->
+
+  <section
+    id="loading"
+    class="loading"
+    hidden
+  >
+
+    <div class="loading__pulse"></div>
+
     <div>
-      <p class="results__eyebrow" id="results-filename"></p>
-      <h2 class="results__headline">Your resume, checked</h2>
-      <p id="delta-panel" class="delta-panel" hidden></p>
+
+      <p id="loading-message">
+        Reading your resume…
+      </p>
+
+      <div class="loading-steps">
+
+        <span data-step="extract">
+          EXTRACT
+        </span>
+
+        <span data-step="detect">
+          DETECT
+        </span>
+
+        <span data-step="score">
+          SCORE
+        </span>
+
+        <span data-step="plan">
+          PLAN
+        </span>
+
+      </div>
+
     </div>
-    <div class="results__actions">
-      <button id="download-pdf-button" class="download-button" type="button">Download PDF Report</button>
-      <button id="reset-button" class="reset-button" type="button">Try another resume</button>
+
+  </section>
+
+
+  <!-- =========================================================
+       EXISTING RESULTS SECTION
+       ========================================================= -->
+
+  <section
+    id="results"
+    class="results"
+    hidden
+  >
+
+    <div class="results__header">
+
+      <div>
+
+        <p
+          class="results__eyebrow"
+          id="results-filename"
+        ></p>
+
+        <h2 class="results__headline">
+          Your resume, checked
+        </h2>
+
+        <p
+          id="delta-panel"
+          class="delta-panel"
+          hidden
+        ></p>
+
+      </div>
+
+
+      <div class="results__actions">
+
+        <button
+          id="download-pdf-button"
+          class="download-button"
+          type="button"
+        >
+          Download PDF Report
+        </button>
+
+        <button
+          id="reset-button"
+          class="reset-button"
+          type="button"
+        >
+          Try another resume
+        </button>
+
+      </div>
+
     </div>
-  </div>
-  <p id="download-error" class="error-message" hidden></p>
 
-  <div class="health" id="health-panel"></div>
-  <div id="experience-panel" class="insight-panel" hidden></div>
-  <div class="ats-panel" id="ats-panel"></div>
 
-  <div class="legend">
-    <span class="legend__title">SKILL LEGEND</span>
-    <span class="skill-tag matched">Matched</span>
-    <span class="skill-tag missing">Missing</span>
-    <span class="skill-tag required">Required · 70%</span>
-    <span class="skill-tag preferred">Preferred · 30%</span>
-  </div>
+    <p
+      id="download-error"
+      class="error-message"
+      hidden
+    ></p>
 
-  <div class="plan-panel" id="plan-panel" hidden></div>
 
-  <div class="confirm-panel" id="confirm-panel" hidden>
-    <p class="confirm-panel__eyebrow">Before we edit your resume</p>
-    <h3 class="confirm-panel__title">Confirm the skills and applications you actually know</h3>
-    <p class="confirm-panel__sub">Matched skills are preserved. For missing skills, only check skills you genuinely know. Then confirm which applications/tools you have used — nothing is inferred.</p>
-    <div class="confirm-list" id="confirm-list"></div>
-    <div id="application-list" class="application-list"></div>
-    <div class="generate-actions">
-      <button id="preview-resume-button" class="download-button" type="button">Preview Changes</button>
+    <div
+      class="health"
+      id="health-panel"
+    ></div>
+
+
+    <div
+      id="experience-panel"
+      class="insight-panel"
+      hidden
+    ></div>
+
+
+    <div
+      class="ats-panel"
+      id="ats-panel"
+    ></div>
+
+
+    <!-- SKILL LEGEND -->
+
+    <div class="legend">
+
+      <span class="legend__title">
+        SKILL LEGEND
+      </span>
+
+      <span class="skill-tag matched">
+        Matched
+      </span>
+
+      <span class="skill-tag missing">
+        Missing
+      </span>
+
+      <span class="skill-tag required">
+        Required · 70%
+      </span>
+
+      <span class="skill-tag preferred">
+        Preferred · 30%
+      </span>
+
     </div>
-    <p id="generate-note" class="confirm-panel__note" hidden></p>
-    <p id="generate-error" class="error-message" hidden></p>
-  </div>
 
-  <div id="resume-preview" class="preview-panel" hidden></div>
 
-  <div class="focus-panel" id="focus-panel" hidden">
-    <p class="focus-panel__eyebrow">Highest-leverage next step</p>
-    <h3 class="focus-panel__title">Focus on these skills next</h3>
-    <p class="focus-panel__sub">Ranked by how many roles they'd unlock or strengthen.</p>
-    <ol class="focus-list" id="focus-list"></ol>
-  </div>
+    <!-- ACTION PLAN -->
 
-  <div id="interview-panel" class="interview-panel" hidden></div>
+    <div
+      class="plan-panel"
+      id="plan-panel"
+      hidden
+    ></div>
 
-  <h3 class="section-heading" id="roles-heading">Where you're the strongest fit</h3>
-  <ol class="role-list" id="role-list"></ol>
-</section>
+
+    <!-- CONFIRMATION -->
+
+    <div
+      class="confirm-panel"
+      id="confirm-panel"
+      hidden
+    >
+
+      <p class="confirm-panel__eyebrow">
+        Before we edit your resume
+      </p>
+
+      <h3 class="confirm-panel__title">
+        Confirm the skills and applications you actually know
+      </h3>
+
+      <p class="confirm-panel__sub">
+        Matched skills are preserved. For missing skills,
+        only check skills you genuinely know. Then confirm
+        which applications/tools you have used — nothing is inferred.
+      </p>
+
+
+      <div
+        class="confirm-list"
+        id="confirm-list"
+      ></div>
+
+
+      <div
+        id="application-list"
+        class="application-list"
+      ></div>
+
+
+      <div class="generate-actions">
+
+        <button
+          id="preview-resume-button"
+          class="download-button"
+          type="button"
+        >
+          Preview Changes
+        </button>
+
+      </div>
+
+
+      <p
+        id="generate-note"
+        class="confirm-panel__note"
+        hidden
+      ></p>
+
+      <p
+        id="generate-error"
+        class="error-message"
+        hidden
+      ></p>
+
+    </div>
+
+
+    <div
+      id="resume-preview"
+      class="preview-panel"
+      hidden
+    ></div>
+
+
+    <!-- FOCUS PANEL -->
+
+    <div
+      class="focus-panel"
+      id="focus-panel"
+      hidden
+    >
+
+      <p class="focus-panel__eyebrow">
+        Highest-leverage next step
+      </p>
+
+      <h3 class="focus-panel__title">
+        Focus on these skills next
+      </h3>
+
+      <p class="focus-panel__sub">
+        Ranked by how many roles they'd unlock or strengthen.
+      </p>
+
+      <ol
+        class="focus-list"
+        id="focus-list"
+      ></ol>
+
+    </div>
+
+
+    <!-- INTERVIEW -->
+
+    <div
+      id="interview-panel"
+      class="interview-panel"
+      hidden
+    ></div>
+
+
+    <!-- ROLES -->
+
+    <h3
+      class="section-heading"
+      id="roles-heading"
+    >
+      Where you're the strongest fit
+    </h3>
+
+
+    <ol
+      class="role-list"
+      id="role-list"
+    ></ol>
+
+  </section>
+
 </main>
 
-<footer class="site-footer"><p>Matches are keyword-based. Use them as a decision aid, and only add skills or applications you can truthfully support.</p></footer>
-<script>window.ROLE_APPLICATIONS = {{ applications|tojson }};</script>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+
+<footer class="site-footer">
+
+  <p>
+    Matches are keyword-based. Use them as a decision aid,
+    and only add skills or applications you can truthfully support.
+  </p>
+
+</footer>
+
+
+<!-- =========================================================
+     JAVASCRIPT DATA
+     ========================================================= -->
+
+<script>
+  window.ROLE_APPLICATIONS = {{ applications|tojson }};
+</script>
+
+
+<script
+  src="{{ url_for('static', filename='script.js') }}"
+></script>
+
+
 </body>
 </html>

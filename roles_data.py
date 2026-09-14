@@ -8,6 +8,9 @@ To add a new role: add an entry to ROLES with a "skills" list (drawn from,
 or extending, SKILL_VOCABULARY) and a one-line "description".
 """
 
+import json
+import os
+
 # Master list of recognizable skills/keywords across roles.
 # Extend this as you add more roles or want finer-grained matching.
 SKILL_VOCABULARY = [
@@ -203,8 +206,42 @@ for _role_info in ROLES.values():
     _role_info["skills"] = list(dict.fromkeys(_role_info["required"] + _role_info.get("preferred", [])))
 
 
-def add_custom_role(role_name: str, jd_text: str, extracted_skills=None) -> dict:
-    """Add a JD-derived role to ROLES and persist it in this module file."""
+CUSTOM_ROLES_FILE = os.path.join(os.path.dirname(__file__), "custom_roles.json")
+
+
+def _load_custom_roles(custom_roles_path=None):
+    path = custom_roles_path or CUSTOM_ROLES_FILE
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_custom_roles(custom_roles, custom_roles_path=None):
+    path = custom_roles_path or CUSTOM_ROLES_FILE
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(custom_roles, handle, indent=2, ensure_ascii=False)
+
+
+for _custom_name, _custom_info in _load_custom_roles().items():
+    normalized = {
+        "description": _custom_info.get("description", f"Custom role created from a pasted job description ({len(_custom_info.get('required', []))} recognized skills)."),
+        "level": _custom_info.get("level", "mid"),
+        "required": list(_custom_info.get("required", [])),
+        "preferred": list(_custom_info.get("preferred", [])),
+        "skills": list(_custom_info.get("skills", _custom_info.get("required", []))),
+        "custom": True,
+    }
+    ROLES[_custom_name] = normalized
+
+
+def add_custom_role(role_name: str, jd_text: str, extracted_skills=None, custom_roles_path=None) -> dict:
+    """Add a JD-derived role to ROLES and persist it to a JSON file."""
     import re as _re
     clean_name = _re.sub(r"\s+", " ", (role_name or "").strip())[:80]
     if not clean_name:
@@ -222,11 +259,7 @@ def add_custom_role(role_name: str, jd_text: str, extracted_skills=None) -> dict
     }
     ROLES[clean_name] = info
 
-    # Persist as valid Python so the role survives a local/server restart.
-    marker = "\n# Custom roles created through the Role Finder UI.\n"
-    if marker.strip() not in open(__file__, "r", encoding="utf-8").read():
-        with open(__file__, "a", encoding="utf-8") as f:
-            f.write(marker)
-    with open(__file__, "a", encoding="utf-8") as f:
-        f.write(f'ROLES[{clean_name!r}] = {info!r}\n')
+    custom_roles = _load_custom_roles(custom_roles_path)
+    custom_roles[clean_name] = info
+    _save_custom_roles(custom_roles, custom_roles_path)
     return {"role": clean_name, "skills": skills, "description": info["description"]}
