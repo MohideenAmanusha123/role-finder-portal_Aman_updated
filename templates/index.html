@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Role Finder — resume intelligence</title>
+  <title>Role Finder — Resume Intelligence</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
 
@@ -24,7 +24,6 @@
 <header class="masthead">
   <span class="masthead__mark">Role Finder</span>
 </header>
-
 
 <main>
 
@@ -47,7 +46,6 @@
           description, then preview every improvement before you
           download anything.
         </p>
-
 
         <!-- MODE SWITCH -->
 
@@ -75,7 +73,6 @@
 
         </div>
 
-
         <!-- TARGET ROLE -->
 
         <label
@@ -100,7 +97,6 @@
 
         </select>
 
-
         <!-- JOB DESCRIPTION -->
 
         <div
@@ -123,7 +119,6 @@
             placeholder="Paste the complete JD here. Role Finder will extract recognized skills and compare them with your resume."
           ></textarea>
 
-
           <div class="custom-role-row">
 
             <input
@@ -144,7 +139,6 @@
 
           </div>
 
-
           <p
             id="custom-role-note"
             class="confirm-panel__note"
@@ -152,7 +146,6 @@
           ></p>
 
         </div>
-
 
         <!-- RESUME UPLOAD -->
 
@@ -181,6 +174,7 @@
               height="36"
               viewBox="0 0 40 40"
               fill="none"
+              aria-hidden="true"
             >
 
               <path
@@ -201,7 +195,6 @@
 
             </svg>
 
-
             <p class="dropzone__label">
               Drop your resume here, or
               <span class="dropzone__browse">browse</span>
@@ -214,7 +207,6 @@
           </div>
 
         </form>
-
 
         <p
           id="file-status"
@@ -229,7 +221,6 @@
         ></p>
 
       </div>
-
 
       <!-- ROLE PREVIEW -->
 
@@ -258,14 +249,14 @@
 
 
   <!-- =========================================================
-       ATS RESUME BUILDER SIDE FEATURE
+       ATS RESUME BUILDER FEATURE
        ========================================================= -->
 
   <section class="feature-card ats-builder-card">
 
     <div class="feature-card-content">
 
-      <div class="feature-icon">
+      <div class="feature-icon" aria-hidden="true">
         ✨
       </div>
 
@@ -281,12 +272,10 @@
         </p>
 
         <div class="feature-tags">
-
           <span>ATS Safe</span>
           <span>PDF</span>
           <span>Word</span>
           <span>Single Column</span>
-
         </div>
 
         <button
@@ -318,7 +307,6 @@
       class="ats-modal__overlay"
       onclick="closeATSResumeBuilder()"
     ></div>
-
 
     <div
       class="ats-modal__content"
@@ -352,7 +340,7 @@
           type="button"
           class="ats-modal__close"
           onclick="closeATSResumeBuilder()"
-          aria-label="Close"
+          aria-label="Close resume builder"
         >
           ×
         </button>
@@ -360,7 +348,9 @@
       </div>
 
 
-      <!-- BUILDER FORM -->
+      <!-- =====================================================
+           BUILDER FORM
+           ===================================================== -->
 
       <form id="ats-resume-builder-form">
 
@@ -381,7 +371,7 @@
               </label>
 
               <input
-                id="ats_name"
+                id="ats-name"
                 name="name"
                 type="text"
                 placeholder="John Doe"
@@ -398,7 +388,7 @@
               </label>
 
               <input
-                id="ats_email"
+                id="ats-email"
                 name="email"
                 type="email"
                 placeholder="john@example.com"
@@ -415,7 +405,7 @@
               </label>
 
               <input
-                id="ats_phone"
+                id="ats-phone"
                 name="phone"
                 type="text"
                 placeholder="+91 9876543210"
@@ -431,7 +421,7 @@
               </label>
 
               <input
-                id="ats_location"
+                id="ats-location"
                 name="location"
                 type="text"
                 placeholder="Chennai, India"
@@ -447,7 +437,7 @@
               </label>
 
               <input
-                id="ats_linkedin"
+                id="ats-linkedin"
                 name="linkedin"
                 type="text"
                 placeholder="linkedin.com/in/yourname"
@@ -463,7 +453,7 @@
               </label>
 
               <input
-                id="ats_portfolio"
+                id="ats-website"
                 name="website"
                 type="text"
                 placeholder="yourwebsite.com"
@@ -491,7 +481,7 @@
             </label>
 
             <textarea
-              id="ats_summary"
+              id="ats-summary"
               name="summary"
               rows="5"
               placeholder="Write a concise professional summary..."
@@ -502,7 +492,7 @@
         </section>
 
 
-        <!-- OPTIONAL JOB DESCRIPTION -->
+        <!-- TARGET JOB DESCRIPTION -->
 
         <section class="builder-section">
 
@@ -514,14 +504,14 @@
           </h3>
 
           <p class="builder-help">
-            Paste a job description to help identify
-            relevant keywords and improve ATS alignment.
+            Paste a job description to identify relevant keywords
+            and improve ATS alignment.
           </p>
 
           <div class="builder-field">
 
             <textarea
-              id="ats_job_description"
+              id="ats-job-description"
               name="job_description"
               rows="7"
               placeholder="Paste the target job description here..."
@@ -532,7 +522,9 @@
         </section>
 
 
-        <!-- SKILLS -->
+        <!-- =====================================================
+             SKILLS
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -560,9 +552,8 @@
 
           </div>
 
-
           <div
-            id="atsSkillsContainer"
+            id="ats-skills-list"
             class="builder-list"
           >
 
@@ -577,6 +568,7 @@
               <button
                 type="button"
                 class="remove-builder-item"
+                aria-label="Remove skill"
               >
                 ×
               </button>
@@ -588,7 +580,9 @@
         </section>
 
 
-        <!-- EXPERIENCE -->
+        <!-- =====================================================
+             WORK EXPERIENCE
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -612,9 +606,8 @@
 
           </div>
 
-
           <div
-            id="atsExperienceContainer"
+            id="ats-experience-list"
             class="builder-list"
           >
 
@@ -713,7 +706,9 @@
         </section>
 
 
-        <!-- EDUCATION -->
+        <!-- =====================================================
+             EDUCATION
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -737,9 +732,8 @@
 
           </div>
 
-
           <div
-            id="atsEducationContainer"
+            id="ats-education-list"
             class="builder-list"
           >
 
@@ -823,7 +817,9 @@
         </section>
 
 
-        <!-- PROJECTS -->
+        <!-- =====================================================
+             PROJECTS
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -847,9 +843,8 @@
 
           </div>
 
-
           <div
-            id="atsProjectsContainer"
+            id="ats-projects-list"
             class="builder-list"
           >
 
@@ -899,7 +894,9 @@
         </section>
 
 
-        <!-- CERTIFICATIONS -->
+        <!-- =====================================================
+             CERTIFICATIONS
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -923,9 +920,8 @@
 
           </div>
 
-
           <div
-            id="atsCertificationsContainer"
+            id="ats-certifications-list"
             class="builder-list"
           >
 
@@ -940,6 +936,7 @@
               <button
                 type="button"
                 class="remove-builder-item"
+                aria-label="Remove certification"
               >
                 ×
               </button>
@@ -951,7 +948,9 @@
         </section>
 
 
-        <!-- ACHIEVEMENTS -->
+        <!-- =====================================================
+             ACHIEVEMENTS
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -975,9 +974,8 @@
 
           </div>
 
-
           <div
-            id="atsAchievementsContainer"
+            id="ats-achievements-list"
             class="builder-list"
           >
 
@@ -992,6 +990,7 @@
               <button
                 type="button"
                 class="remove-builder-item"
+                aria-label="Remove achievement"
               >
                 ×
               </button>
@@ -1003,7 +1002,9 @@
         </section>
 
 
-        <!-- LANGUAGES -->
+        <!-- =====================================================
+             LANGUAGES
+             ===================================================== -->
 
         <section class="builder-section">
 
@@ -1013,8 +1014,12 @@
 
           <div class="builder-field">
 
+            <label for="ats-languages">
+              Languages
+            </label>
+
             <input
-              id="ats_languages"
+              id="ats-languages"
               name="languages"
               type="text"
               placeholder="English, Tamil, Hindi"
@@ -1025,7 +1030,7 @@
         </section>
 
 
-        <!-- BUILDER ERROR -->
+        <!-- ERROR -->
 
         <p
           id="ats-builder-error"
@@ -1034,7 +1039,9 @@
         ></p>
 
 
-        <!-- BUILDER ACTIONS -->
+        <!-- =====================================================
+             ACTION BUTTONS
+             ===================================================== -->
 
         <div id="atsDownloadActions" class="ats-builder-actions">
 
@@ -1076,7 +1083,7 @@
 
 
       <!-- =====================================================
-           ATS SCORE / PREVIEW
+           ATS SCORE / RECOMMENDATIONS / PREVIEW
            ===================================================== -->
 
       <div
@@ -1084,6 +1091,8 @@
         class="ats-builder-result"
         hidden
       >
+
+        <!-- SCORE -->
 
         <div class="ats-score-card">
 
@@ -1103,6 +1112,8 @@
         </div>
 
 
+        <!-- RECOMMENDATIONS -->
+
         <div
           id="atsRecommendations"
           class="ats-builder-recommendations"
@@ -1110,6 +1121,8 @@
           <ul id="atsRecommendationsList"></ul>
         </div>
 
+
+        <!-- PREVIEW -->
 
         <div
           id="atsResumePreview"
@@ -1126,7 +1139,7 @@
 
 
   <!-- =========================================================
-       EXISTING LOADING SECTION
+       LOADING
        ========================================================= -->
 
   <section
@@ -1169,7 +1182,7 @@
 
 
   <!-- =========================================================
-       EXISTING RESULTS SECTION
+       RESULTS
        ========================================================= -->
 
   <section
@@ -1348,6 +1361,8 @@
     </div>
 
 
+    <!-- RESUME PREVIEW -->
+
     <div
       id="resume-preview"
       class="preview-panel"
@@ -1383,7 +1398,7 @@
     </div>
 
 
-    <!-- INTERVIEW -->
+    <!-- INTERVIEW PANEL -->
 
     <div
       id="interview-panel"
@@ -1434,11 +1449,9 @@
   window.ROLE_APPLICATIONS = {{ applications|tojson }};
 </script>
 
-
 <script
   src="{{ url_for('static', filename='script.js') }}"
 ></script>
-
 
 </body>
 </html>
