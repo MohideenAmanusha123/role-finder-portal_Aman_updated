@@ -560,6 +560,14 @@
 
             </div>
 
+            <button
+              type="button"
+              class="secondary-button"
+              id="auto-generate-summary"
+            >
+              Auto Generate
+            </button>
+
           </div>
 
           <div class="builder-field">
@@ -603,6 +611,14 @@
               </h3>
 
             </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              id="auto-generate-target-job"
+            >
+              Auto Generate
+            </button>
 
           </div>
 
@@ -1239,16 +1255,18 @@
             type="button"
             id="download-ats-pdf"
             class="primary-button"
+            disabled
           >
-            Download PDF
+            Download PDF after preview
           </button>
 
           <button
             type="button"
             id="download-ats-docx"
             class="primary-button"
+            disabled
           >
-            Download Word
+            Download Word after preview
           </button>
 
         </div>
@@ -1302,9 +1320,11 @@
           class="ats-builder-preview"
         >
 
+          <p class="ats-preview-label">FULL RESUME PREVIEW</p>
+
           <div
             id="atsResumePreviewContent"
-            class="ats-resume-preview-content"
+            class="ats-resume-preview-content resume-paper"
           ></div>
 
         </div>
@@ -1527,7 +1547,7 @@
         <legend>Summary</legend>
         <label><input type="radio" name="summary-mode" value="keep"> Keep my existing summary</label>
         <label><input type="radio" name="summary-mode" value="update" checked> Update it for this role, skills, and experience</label>
-        <label><input type="radio" name="summary-mode" value="ai"> AI-assisted summary (OpenAI)</label>
+        <label><input type="radio" name="summary-mode" value="ai"> AI-assisted summary <span class="summary-beta-note">✨ Testing phase</span></label>
       </fieldset>
 
       <div class="generate-actions">

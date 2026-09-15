@@ -313,6 +313,32 @@ def bullet_usage_ratio(text: str) -> float:
     return len([l for l in lines if BULLET_RE.match(l)]) / len(lines)
 
 
+def _build_advanced_interview_questions(skill: str, role_name: str) -> list[str]:
+    skill_lower = skill.lower()
+    soft_markers = (
+        "communication", "leadership", "teamwork", "problem solving", "stakeholder",
+        "presentation", "collaboration", "negotiation", "conflict", "decision making"
+    )
+
+    if skill_lower in SOFT_SKILLS or any(marker in skill_lower for marker in soft_markers):
+        return [
+            f"Tell me about a time you used {skill} to influence a decision or resolve a conflict in a team setting.",
+            f"How do you know when {skill} is working well in a project, and what signals do you monitor?",
+            f"Describe a situation where you had to apply {skill} without authority and how you handled it.",
+            f"What is your approach to improving {skill} in a fast-moving {role_name} environment?",
+            f"Give an example of a trade-off you made when balancing {skill} with speed, quality, or stakeholder demands.",
+        ]
+
+    return [
+        f"Walk me through a real project where you used {skill} to solve a business or technical problem.",
+        f"If a production issue related to {skill} appeared unexpectedly, how would you diagnose and prioritize the root cause?",
+        f"What trade-offs or design decisions do you consider when implementing {skill} at scale or in a time-sensitive environment?",
+        f"How do you validate the quality and reliability of your work with {skill} before presenting it to stakeholders?",
+        f"Describe a time when requirements changed while you were working with {skill}. How did you adapt and communicate the impact?",
+        f"How would you explain the value of {skill} to a non-technical stakeholder in a {role_name} role?",
+    ]
+
+
 def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experience=None) -> dict:
     match = compute_role_match(resume_skills, role_name, experience)
     missing = match["missing_skills"]
@@ -330,11 +356,7 @@ def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experi
 
     questions = {}
     for s in missing[:8]:
-        questions[s] = [
-            f"What is your current level with {s}, and where have you used it?",
-            f"Walk me through a problem you would solve using {s}.",
-            f"What are the main trade-offs or best practices you know for {s}?",
-        ]
+        questions[s] = _build_advanced_interview_questions(s, role_name)
 
     resume_changes = list(ats_issues[:3])
     if missing:
@@ -411,11 +433,8 @@ def analyze_text(resume_text: str, target_role: str = None, job_description: str
                 "Quantify outcomes in your experience bullets rather than listing duties only.",
             ],
             "interview_questions": {
-                s: [
-                    f"What hands-on experience do you have with {s}?",
-                    f"Describe a practical problem you solved using {s}.",
-                    f"What would you check first if {s} stopped working as expected?",
-                ] for s in jd_match["missing_skills"][:8]
+                s: _build_advanced_interview_questions(s, jd_match.get("role", "target role"))
+                for s in jd_match["missing_skills"][:8]
             },
         }
     elif target_role and target_role in ROLES:
