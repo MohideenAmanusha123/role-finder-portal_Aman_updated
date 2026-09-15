@@ -561,10 +561,10 @@ def generate_ats_pdf(data):
     document = SimpleDocTemplate(
         output,
         pagesize=A4,
-        rightMargin=18 * mm,
-        leftMargin=18 * mm,
-        topMargin=15 * mm,
-        bottomMargin=15 * mm,
+        rightMargin=14 * mm,
+        leftMargin=14 * mm,
+        topMargin=10 * mm,
+        bottomMargin=10 * mm,
         title=data["personal"]["name"] or "ATS Resume",
         author="Role Finder Portal",
     )
@@ -575,49 +575,49 @@ def generate_ats_pdf(data):
         "ResumeName",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
-        fontSize=18,
-        leading=22,
+        fontSize=17,
+        leading=19,
         alignment=TA_CENTER,
-        spaceAfter=3,
+        spaceAfter=2,
     )
 
     title_style = ParagraphStyle(
         "ResumeTitle",
         parent=styles["Normal"],
         fontName="Helvetica",
-        fontSize=10,
-        leading=13,
+        fontSize=9.5,
+        leading=11,
         alignment=TA_CENTER,
-        spaceAfter=5,
+        spaceAfter=3,
     )
 
     contact_style = ParagraphStyle(
         "ResumeContact",
         parent=styles["Normal"],
         fontName="Helvetica",
-        fontSize=8.5,
-        leading=11,
+        fontSize=8,
+        leading=9.5,
         alignment=TA_CENTER,
-        spaceAfter=7,
+        spaceAfter=4,
     )
 
     section_style = ParagraphStyle(
         "ResumeSection",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
-        fontSize=10.5,
-        leading=13,
-        spaceBefore=8,
-        spaceAfter=4,
+        fontSize=10,
+        leading=11,
+        spaceBefore=5,
+        spaceAfter=2,
     )
 
     body_style = ParagraphStyle(
         "ResumeBody",
         parent=styles["Normal"],
         fontName="Helvetica",
-        fontSize=9,
-        leading=12,
-        spaceAfter=3,
+        fontSize=8.5,
+        leading=10,
+        spaceAfter=1.5,
     )
 
     job_title_style = ParagraphStyle(
@@ -683,7 +683,7 @@ def generate_ats_pdf(data):
                 width="100%",
                 thickness=0.6,
                 spaceBefore=0,
-                spaceAfter=5,
+                spaceAfter=3,
             )
         )
 
@@ -947,14 +947,14 @@ def remove_table_borders(table):
 def add_docx_heading(document, title):
     paragraph = document.add_paragraph()
 
-    paragraph.paragraph_format.space_before = Pt(8)
-    paragraph.paragraph_format.space_after = Pt(3)
+    paragraph.paragraph_format.space_before = Pt(5)
+    paragraph.paragraph_format.space_after = Pt(2)
 
     run = paragraph.add_run(title.upper())
 
     run.bold = True
     run.font.name = "Arial"
-    run.font.size = Pt(10.5)
+    run.font.size = Pt(10)
 
     return paragraph
 
@@ -962,13 +962,13 @@ def add_docx_heading(document, title):
 def add_docx_body(document, text, bold=False):
     paragraph = document.add_paragraph()
 
-    paragraph.paragraph_format.space_after = Pt(3)
+    paragraph.paragraph_format.space_after = Pt(1)
 
     run = paragraph.add_run(text)
 
     run.bold = bold
     run.font.name = "Arial"
-    run.font.size = Pt(9)
+    run.font.size = Pt(8.5)
 
     return paragraph
 
@@ -984,16 +984,16 @@ def generate_ats_docx(data):
 
     section = document.sections[0]
 
-    section.top_margin = Inches(0.55)
-    section.bottom_margin = Inches(0.55)
-    section.left_margin = Inches(0.7)
-    section.right_margin = Inches(0.7)
+    section.top_margin = Inches(0.45)
+    section.bottom_margin = Inches(0.45)
+    section.left_margin = Inches(0.6)
+    section.right_margin = Inches(0.6)
 
     # Default font
     styles = document.styles
 
     styles["Normal"].font.name = "Arial"
-    styles["Normal"].font.size = Pt(9)
+    styles["Normal"].font.size = Pt(8.5)
 
     personal = data["personal"]
 
@@ -1010,7 +1010,7 @@ def generate_ats_docx(data):
 
         run.bold = True
         run.font.name = "Arial"
-        run.font.size = Pt(18)
+        run.font.size = Pt(17)
 
     # Title
     if personal["title"]:
@@ -1024,7 +1024,7 @@ def generate_ats_docx(data):
         )
 
         run.font.name = "Arial"
-        run.font.size = Pt(10)
+        run.font.size = Pt(9.5)
 
     # Contact
     contact = [
@@ -1051,7 +1051,7 @@ def generate_ats_docx(data):
         )
 
         run.font.name = "Arial"
-        run.font.size = Pt(8.5)
+        run.font.size = Pt(8)
 
     # Summary
     if data["summary"]:
@@ -1128,14 +1128,14 @@ def generate_ats_docx(data):
                     style="List Bullet"
                 )
 
-                paragraph.paragraph_format.space_after = Pt(2)
+                paragraph.paragraph_format.space_after = Pt(1)
 
                 run = paragraph.add_run(
                     bullet
                 )
 
                 run.font.name = "Arial"
-                run.font.size = Pt(9)
+                run.font.size = Pt(8.5)
 
     # Education
     if data["education"]:
