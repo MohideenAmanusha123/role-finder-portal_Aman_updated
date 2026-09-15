@@ -440,10 +440,67 @@ function bindATSBuilderActions() {
         importInput.addEventListener("change", importExistingATSResume);
     }
 
+    const languageField = document.getElementById("ats-languages");
+    if (languageField && !languageField.dataset.bound) {
+        languageField.dataset.bound = "true";
+        languageField.addEventListener("change", renderSelectedLanguages);
+    }
+    const addLanguageButton = document.getElementById("add-ats-language");
+    if (addLanguageButton && !addLanguageButton.dataset.bound) {
+        addLanguageButton.dataset.bound = "true";
+        addLanguageButton.addEventListener("click", addCustomATSLanguage);
+    }
+    const customLanguageInput = document.getElementById("ats-custom-language");
+    if (customLanguageInput && !customLanguageInput.dataset.bound) {
+        customLanguageInput.dataset.bound = "true";
+        customLanguageInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addCustomATSLanguage();
+            }
+        });
+    }
+
     const addSkillButton = document.getElementById("add-ats-skill");
     if (addSkillButton && !addSkillButton.dataset.bound) {
         addSkillButton.dataset.bound = "true";
         addSkillButton.addEventListener("click", addATSSkill);
+    }
+
+    function renderSelectedLanguages() {
+        const languageField = document.getElementById("ats-languages");
+        const list = document.getElementById("ats-selected-languages");
+        if (!languageField || !list) return;
+        list.innerHTML = "";
+        [...languageField.selectedOptions].forEach((option) => {
+            const tag = document.createElement("span");
+            tag.className = "selected-language";
+            tag.textContent = option.value;
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "selected-language__remove";
+            remove.setAttribute("aria-label", `Remove ${option.value}`);
+            remove.textContent = "×";
+            remove.addEventListener("click", () => {
+                option.selected = false;
+                renderSelectedLanguages();
+            });
+            tag.appendChild(remove);
+            list.appendChild(tag);
+        });
+    }
+
+    function addCustomATSLanguage() {
+        const input = document.getElementById("ats-custom-language");
+        const languageField = document.getElementById("ats-languages");
+        if (!input || !languageField) return;
+        const value = input.value.trim();
+        if (!value) return;
+        const existing = [...languageField.options].find((option) => option.value.toLowerCase() === value.toLowerCase());
+        const option = existing || languageField.add(new Option(value, value));
+        option.selected = true;
+        input.value = "";
+        renderSelectedLanguages();
     }
 
     async function importExistingATSResume(event) {
@@ -497,6 +554,7 @@ function bindATSBuilderActions() {
             [...languageField.options].forEach((option) => {
                 option.selected = selectedLanguages.has(option.value.toLowerCase());
             });
+            renderSelectedLanguages();
         }
 
         const experience = document.getElementById("ats-experience-list");
@@ -766,6 +824,14 @@ function setATSDownloadState(enabled) {
 function initializeATSBuilder() {
     atsPreviewSignature = null;
     setATSDownloadState(false);
+    const languageField = document.getElementById("ats-languages");
+    if (languageField) {
+        [...languageField.options].forEach((option) => { option.selected = false; });
+    }
+    const selectedLanguages = document.getElementById("ats-selected-languages");
+    if (selectedLanguages) selectedLanguages.innerHTML = "";
+    const customLanguage = document.getElementById("ats-custom-language");
+    if (customLanguage) customLanguage.value = "";
     const skills = document.getElementById("ats-skills-list");
     if (skills) { skills.innerHTML = ""; addATSSkill(); addATSSkill(); addATSSkill(); }
 

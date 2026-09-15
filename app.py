@@ -77,6 +77,18 @@ def _parse_experience_entries(lines):
         rf"(?:end\s+date|to)\s*:\s*(?P<end>present|current|{date_token})$",
         re.I,
     )
+
+    def split_header(value):
+        value = value.strip(" -–—|")
+        if not value:
+            return []
+        parts = [
+            part.strip()
+            for part in re.split(r"\s*\|\s*|\s+at\s+|\s+@\s+", value, flags=re.I)
+            if part.strip()
+        ]
+        return parts[-2:]
+
     date_positions = [
         (index, inline_date_pattern.search(line))
         for index, line in enumerate(lines)
@@ -100,13 +112,15 @@ def _parse_experience_entries(lines):
                 inline_suffix = date_line[date_match.end():].strip(" -–—|")
                 start_date = date_match.group("start")
                 end_date = date_match.group("end")
-            inline_header = [part.strip() for part in re.split(r"\s*\|\s*|\s+at\s+", inline_prefix, flags=re.I) if part.strip()]
+            inline_header = split_header(inline_prefix)
             if inline_header:
                 header = inline_header[-2:]
                 body = between
             else:
                 header = between[-2:]
                 body = between[:-len(header)] if header else between
+                if len(header) == 1:
+                    header = split_header(header[0])
             if entries and body:
                 entries[-1]["description"] = "\n".join(body)
             entries.append({
@@ -151,10 +165,14 @@ def _parse_resume_for_builder(text):
     sections = {}
     current = None
     for line in lines:
-        matched = next((name for name, pattern in heading_patterns.items() if pattern.match(line)), None)
+        heading, separator, inline_content = line.partition(":")
+        heading_candidate = heading.strip() if separator else line
+        matched = next((name for name, pattern in heading_patterns.items() if pattern.fullmatch(heading_candidate) or pattern.match(heading_candidate)), None)
         if matched:
             current = matched
             sections.setdefault(current, [])
+            if separator and inline_content.strip():
+                sections[current].append(inline_content.strip())
         elif current:
             sections[current].append(line)
 
