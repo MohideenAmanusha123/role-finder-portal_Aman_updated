@@ -2598,3 +2598,35 @@ main {
     width: 100%;
   }
 }
+/* =========================================================
+   REMOVE BUTTON (DESTRUCTIVE ACTION)
+========================================================= */
+
+/* =========================================================
+   REMOVE BUTTON
+========================================================= */
+
+.remove-button {
+  background: transparent;   /* no background */
+  color: var(--error);       /* red text using your theme variable */
+  border: none;              /* no border */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.remove-button:hover {
+  color: darkred;            /* darker red text on hover */
+}
+
+
+.remove-button:active {
+  transform: translateY(1px);
+}
+
+.remove-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
