@@ -105,12 +105,14 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
 
 
 def generate_ai_summary(original_summary, skills, applications, role_name=None, experience_signal=None):
-    """Generate a summary through an optional OpenAI-compatible endpoint."""
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("AI summary is not configured. Set OPENAI_API_KEY before selecting AI-assisted summary.")
-    endpoint = os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
-    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    """Generate a summary with local Ollama by default, or an OpenAI-compatible service."""
+    provider = os.environ.get("AI_PROVIDER", "ollama").strip().lower()
+    if provider not in {"ollama", "openai"}:
+        raise ValueError("AI_PROVIDER must be 'ollama' or 'openai'.")
+    model = os.environ.get(
+        "OLLAMA_MODEL" if provider == "ollama" else "OPENAI_MODEL",
+        "llama3.2" if provider == "ollama" else "gpt-4o-mini",
+    )
     labels = ", ".join(format_skill_label(s) for s in skills)
     apps = ", ".join(dict.fromkeys(a for vals in (applications or {}).values() for a in vals if a))
     prompt = (
@@ -121,27 +123,48 @@ def generate_ai_summary(original_summary, skills, applications, role_name=None, 
         f"Confirmed skills: {labels or 'None'}. Confirmed tools: {apps or 'None'}. "
         f"Experience signal: {experience_signal or 'Not provided'}."
     )
-    payload = json.dumps({
-        "model": model,
-        "temperature": 0.3,
-        "messages": [
-            {"role": "system", "content": "You edit resumes conservatively and return only the summary text."},
-            {"role": "user", "content": prompt},
-        ],
-    }).encode("utf-8")
-    req = urllib_request.Request(
-        endpoint,
-        data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    if provider == "ollama":
+        endpoint = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+        payload = json.dumps({
+            "model": model,
+            "prompt": (
+                "You edit resumes conservatively. Return only the summary text, "
+                "without a heading or explanation.\n\n" + prompt
+            ),
+            "stream": False,
+            "options": {"temperature": 0.3},
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+    else:
+        api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is required when AI_PROVIDER=openai.")
+        endpoint = os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+        payload = json.dumps({
+            "model": model,
+            "temperature": 0.3,
+            "messages": [
+                {"role": "system", "content": "You edit resumes conservatively and return only the summary text."},
+                {"role": "user", "content": prompt},
+            ],
+        }).encode("utf-8")
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    req = urllib_request.Request(endpoint, data=payload, headers=headers, method="POST")
     try:
         with urllib_request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
     except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError) as exc:
-        raise ValueError(f"AI summary service could not be reached: {exc}") from exc
+        raise ValueError(
+            f"Ollama is not running at {endpoint}. Install Ollama, run "
+            f"'ollama run {model}', and try again." if provider == "ollama"
+            else f"AI summary service could not be reached: {exc}"
+        ) from exc
     try:
-        summary = result["choices"][0]["message"]["content"].strip()
+        summary = (
+            result["response"].strip()
+            if provider == "ollama"
+            else result["choices"][0]["message"]["content"].strip()
+        )
     except (KeyError, IndexError, TypeError, AttributeError) as exc:
         raise ValueError("AI summary service returned an invalid response.") from exc
     if not summary:

@@ -14,7 +14,7 @@ A Flask resume-analysis app that supports role matching, ATS scoring, pasted job
 - **Interview prep:** missing skills generate up to three likely interview questions each.
 - **Applications/tools:** common applications are mapped to skills. The user must explicitly confirm applications they have actually used.
 - **Summary choices:** users can keep the existing Summary, update it for the selected role and confirmed skills/experience, or use an optional AI-assisted summary.
-- **AI-assisted summary:** set `OPENAI_API_KEY` to enable the OpenAI-compatible summary option. `OPENAI_API_URL` and `OPENAI_MODEL` can override the endpoint and model (defaults are the OpenAI chat completions endpoint and `gpt-4o-mini`). The key stays server-side and is never sent to the browser.
+- **AI-assisted summary:** uses free local Ollama by default. Install Ollama, run `ollama run llama3.2`, and select the AI-assisted summary option. Set `OLLAMA_MODEL` or `OLLAMA_URL` to customize it. OpenAI-compatible services remain available by setting `AI_PROVIDER=openai`, `OPENAI_API_KEY`, and optionally `OPENAI_API_URL` or `OPENAI_MODEL`.
 - **Broader roles:** role matching includes financial, accounting, business analysis, operations, sales/marketing, and HR roles alongside technical roles.
 - **Manual skills:** the confirmation step accepts skills typed under “Add a skill manually” for skills outside the built-in vocabulary.
 - **Output naming:** `ayman.pdf` → `ayman_improved_resume.pdf`; `ayman.docx` → `ayman_improved_resume.docx`.
@@ -36,6 +36,17 @@ python app.py
 ```
 
 Open `http://127.0.0.1:5000`.
+
+For the free local AI summary:
+
+1. Install Ollama from https://ollama.com/download.
+2. In PowerShell, download and start the default model:
+
+```powershell
+ollama run llama3.2
+```
+
+3. In another PowerShell window, start this application with `python app.py`.
 
 For local debugging:
 
