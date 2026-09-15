@@ -1217,16 +1217,33 @@
           <div class="builder-field">
 
             <label for="ats-languages">
-              Languages
+              Languages (select all that apply)
             </label>
 
-            <input
+            <select
               id="ats-languages"
               name="languages"
-              type="text"
-              placeholder="English, Tamil, Hindi"
-              autocomplete="off"
+              multiple
+              size="6"
+              aria-describedby="ats-languages-help"
             >
+              <option>English</option>
+              <option>Spanish</option>
+              <option>French</option>
+              <option>German</option>
+              <option>Hindi</option>
+              <option>Tamil</option>
+              <option>Telugu</option>
+              <option>Malayalam</option>
+              <option>Kannada</option>
+              <option>Arabic</option>
+              <option>Mandarin</option>
+              <option>Japanese</option>
+              <option>Other</option>
+            </select>
+            <p id="ats-languages-help" class="builder-help">
+              Hold Ctrl (Windows) or Command (Mac) to select multiple languages.
+            </p>
 
           </div>
 

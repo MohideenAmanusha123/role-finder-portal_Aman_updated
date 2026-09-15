@@ -2193,7 +2193,8 @@ main {
 }
 
 .builder-section input,
-.builder-section textarea {
+.builder-section textarea,
+.builder-section select {
   width: 100%;
 
   box-sizing: border-box;
@@ -2223,7 +2224,8 @@ main {
 }
 
 .builder-section input:focus,
-.builder-section textarea:focus {
+.builder-section textarea:focus,
+.builder-section select:focus {
   outline: none;
 
   border-color: var(--amber);
@@ -2236,6 +2238,15 @@ main {
   resize: vertical;
 
   min-height: 100px;
+}
+
+.builder-section select[multiple] {
+  min-height: 132px;
+  cursor: pointer;
+}
+
+.builder-section select option {
+  padding: 4px 6px;
 }
 
 .builder-section-heading {
