@@ -2159,7 +2159,8 @@ main {
   flex: 1;
 }
 
-.builder-card {
+.builder-card,
+.builder-repeat-card {
   padding: 18px;
 
   border: 1px solid var(--hairline);
@@ -2167,9 +2168,24 @@ main {
   border-radius: 8px;
 
   background: rgba(0, 0, 0, 0.12);
+
+  margin-bottom: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.builder-card .builder-grid {
+.builder-repeat-card:hover {
+  border-color: var(--hairline-strong);
+}
+
+.builder-repeat-card:last-child {
+  margin-bottom: 0;
+}
+
+.builder-card .builder-grid,
+.builder-repeat-card .builder-grid {
   margin-bottom: 14px;
 }
 
@@ -2224,6 +2240,109 @@ main {
   border-color: var(--error);
 
   background: var(--error-soft);
+}
+
+
+/* =========================================================
+   REPEAT CARD HEADER (title + remove button, same row)
+   Used by addATSExperience / addATSEducation / addATSProject
+   in script.js — wraps "Experience N / Education N / Project N"
+   next to the .remove-button.
+========================================================= */
+
+.repeat-card-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+
+  padding-bottom: 12px;
+
+  border-bottom: 1px solid var(--hairline);
+}
+
+.repeat-card-header strong {
+  font-family: var(--serif);
+
+  font-size: 16px;
+
+  font-weight: 500;
+
+  color: var(--ink);
+
+  letter-spacing: 0.01em;
+}
+
+
+/* =========================================================
+   REMOVE BUTTON — premium inline pill
+   (used inside .repeat-card-header, one per Experience /
+   Education / Project card)
+========================================================= */
+
+.remove-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  flex-shrink: 0;
+
+  border: 1px solid rgba(226, 114, 91, 0.28);
+
+  border-radius: 20px;
+
+  background: transparent;
+
+  color: var(--error);
+
+  font-family: var(--mono);
+
+  font-size: 11px;
+  font-weight: 500;
+
+  letter-spacing: 0.03em;
+
+  padding: 6px 13px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.remove-button::before {
+  content: "×";
+
+  font-size: 14px;
+  line-height: 1;
+}
+
+.remove-button:hover {
+  background: var(--error-soft);
+
+  border-color: var(--error);
+
+  box-shadow: 0 2px 10px -4px rgba(226, 114, 91, 0.45);
+}
+
+.remove-button:active {
+  transform: translateY(1px);
+}
+
+.remove-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
 }
 
 
@@ -2568,6 +2687,18 @@ main {
   .ats-builder-score {
     font-size: 42px;
   }
+
+  .repeat-card-header {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 8px;
+  }
+
+  .remove-button {
+    align-self: flex-end;
+  }
 }
 
 
@@ -2597,36 +2728,4 @@ main {
   .results__actions button {
     width: 100%;
   }
-}
-/* =========================================================
-   REMOVE BUTTON (DESTRUCTIVE ACTION)
-========================================================= */
-
-/* =========================================================
-   REMOVE BUTTON
-========================================================= */
-
-.remove-button {
-  background: transparent;   /* no background */
-  color: var(--error);       /* red text using your theme variable */
-  border: none;              /* no border */
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.remove-button:hover {
-  color: darkred;            /* darker red text on hover */
-}
-
-
-.remove-button:active {
-  transform: translateY(1px);
-}
-
-.remove-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-  box-shadow: none;
 }
