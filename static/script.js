@@ -484,7 +484,20 @@ function bindATSBuilderActions() {
         setATSField("ats-linkedin", personal.linkedin);
         setATSField("ats-website", personal.portfolio);
         setATSField("ats-summary", resume.summary);
-        setATSField("ats-languages", (resume.languages || []).join(", "));
+        const languageField = document.getElementById("ats-languages");
+        if (languageField) {
+            const importedLanguages = resume.languages || [];
+            const knownLanguages = new Set([...languageField.options].map((option) => option.value.toLowerCase()));
+            importedLanguages.forEach((language) => {
+                if (language && !knownLanguages.has(language.toLowerCase())) {
+                    languageField.add(new Option(language, language));
+                }
+            });
+            const selectedLanguages = new Set(importedLanguages.map((language) => language.toLowerCase()));
+            [...languageField.options].forEach((option) => {
+                option.selected = selectedLanguages.has(option.value.toLowerCase());
+            });
+        }
 
         const experience = document.getElementById("ats-experience-list");
         if (experience && resume.experience?.length) {
@@ -1006,8 +1019,10 @@ function collectATSResumeData() {
         .map(el => el.value.trim())
         .filter(Boolean);
 
-    const languages = getValue("ats-languages")
-        .split(",").map(v => v.trim()).filter(Boolean);
+    const languageField = document.getElementById("ats-languages");
+    const languages = languageField?.multiple
+        ? [...languageField.selectedOptions].map(option => option.value.trim()).filter(Boolean)
+        : getValue("ats-languages").split(",").map(v => v.trim()).filter(Boolean);
 
     return {
         personal: {

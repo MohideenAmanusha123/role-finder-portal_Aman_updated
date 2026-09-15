@@ -59,29 +59,62 @@ def improved_filename(filename, ext):
 
 
 def _parse_experience_entries(lines):
+    month = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*"
+    date_token = rf"(?:{month}[\s.-]+)?(?:\d{{1,2}}[\s./-]+)?\d{{4}}"
+    date_separator = r"(?:[-–—]|to|through)"
+    date_range = rf"{date_token}\s*{date_separator}\s*(?:present|current|{date_token})"
     date_pattern = re.compile(
-        r"^(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s.-]*)?"
-        r"\d{4}\s*(?:[-–—]|to)\s*(?:present|current|"
-        r"(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s.-]*)?\d{4})$",
+        rf"^\s*{date_range}\s*$",
         re.I,
     )
-    date_positions = [index for index, line in enumerate(lines) if date_pattern.match(line)]
+    inline_date_pattern = re.compile(
+        rf"(?P<start>{date_token})\s*{date_separator}\s*"
+        rf"(?P<end>present|current|{date_token})",
+        re.I,
+    )
+    labelled_date_pattern = re.compile(
+        rf"^(?:start\s+date|from)\s*:\s*(?P<start>{date_token})\s*(?:[,;|]\s*)?"
+        rf"(?:end\s+date|to)\s*:\s*(?P<end>present|current|{date_token})$",
+        re.I,
+    )
+    date_positions = [
+        (index, inline_date_pattern.search(line))
+        for index, line in enumerate(lines)
+        if date_pattern.match(line) or inline_date_pattern.search(line) or labelled_date_pattern.match(line)
+    ]
     if date_positions:
         entries = []
         previous_date = None
-        for position, date_index in enumerate(date_positions):
+        for position, (date_index, date_match) in enumerate(date_positions):
             between = lines[(previous_date + 1) if previous_date is not None else 0:date_index]
-            header = between[-2:]
-            body = between[:-len(header)] if header else between
+            date_line = lines[date_index]
+            labelled_match = labelled_date_pattern.match(date_line)
+            if labelled_match:
+                date_match = labelled_match
+                start_date = labelled_match.group("start")
+                end_date = labelled_match.group("end")
+                inline_prefix = ""
+                inline_suffix = ""
+            else:
+                inline_prefix = date_line[:date_match.start()].strip(" -–—|")
+                inline_suffix = date_line[date_match.end():].strip(" -–—|")
+                start_date = date_match.group("start")
+                end_date = date_match.group("end")
+            inline_header = [part.strip() for part in re.split(r"\s*\|\s*|\s+at\s+", inline_prefix, flags=re.I) if part.strip()]
+            if inline_header:
+                header = inline_header[-2:]
+                body = between
+            else:
+                header = between[-2:]
+                body = between[:-len(header)] if header else between
             if entries and body:
                 entries[-1]["description"] = "\n".join(body)
-            dates = re.split(r"\s*(?:[-–—]|to)\s*", lines[date_index], maxsplit=1, flags=re.I)
             entries.append({
                 "job_title": header[0] if header else "",
                 "company": header[1] if len(header) > 1 else "",
-                "start_date": dates[0].strip(),
-                "end_date": dates[1].strip() if len(dates) > 1 else "",
-                "description": "\n".join(body),
+                "start_date": start_date.strip(),
+                "end_date": end_date.strip(),
+                "description": inline_suffix,
             })
             previous_date = date_index
         trailing = lines[previous_date + 1:] if previous_date is not None else []
