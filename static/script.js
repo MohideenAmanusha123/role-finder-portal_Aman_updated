@@ -376,6 +376,30 @@ let atsCertificationCount = 0;
 let atsAchievementCount = 0;
 
 function bindATSBuilderActions() {
+    const openButton = document.getElementById("open-ats-builder");
+    if (openButton && !openButton.dataset.bound) {
+        openButton.dataset.bound = "true";
+        openButton.addEventListener("click", openATSResumeBuilder);
+    }
+
+    const closeButton = document.getElementById("close-ats-builder");
+    if (closeButton && !closeButton.dataset.bound) {
+        closeButton.dataset.bound = "true";
+        closeButton.addEventListener("click", closeATSResumeBuilder);
+    }
+
+    const cancelButton = document.getElementById("cancel-ats-builder");
+    if (cancelButton && !cancelButton.dataset.bound) {
+        cancelButton.dataset.bound = "true";
+        cancelButton.addEventListener("click", closeATSResumeBuilder);
+    }
+
+    const overlay = document.getElementById("ats-modal-overlay");
+    if (overlay && !overlay.dataset.bound) {
+        overlay.dataset.bound = "true";
+        overlay.addEventListener("click", closeATSResumeBuilder);
+    }
+
     const addSkillButton = document.getElementById("add-ats-skill");
     if (addSkillButton && !addSkillButton.dataset.bound) {
         addSkillButton.dataset.bound = "true";
@@ -412,10 +436,10 @@ function bindATSBuilderActions() {
         addAchievementButton.addEventListener("click", addATSAchievement);
     }
 
-    const previewButton = document.getElementById("preview-ats-resume");
-    if (previewButton && !previewButton.dataset.bound) {
-        previewButton.dataset.bound = "true";
-        previewButton.addEventListener("click", previewATSResume);
+    const previewBtn = document.getElementById("preview-ats-resume");
+    if (previewBtn && !previewBtn.dataset.bound) {
+        previewBtn.dataset.bound = "true";
+        previewBtn.addEventListener("click", previewATSResume);
     }
 
     const pdfButton = document.getElementById("download-ats-pdf");
@@ -436,29 +460,17 @@ function bindATSBuilderActions() {
 --------------------------------------------------------- */
 
 function openATSResumeBuilder() {
-
-    const modal = document.getElementById(
-        "atsResumeModal"
-    );
-
+    const modal = document.getElementById("atsResumeModal");
     if (!modal) return;
-
     modal.hidden = false;
     modal.style.display = "flex";
-
     bindATSBuilderActions();
     initializeATSBuilder();
 }
 
-
 function closeATSResumeBuilder() {
-
-    const modal = document.getElementById(
-        "atsResumeModal"
-    );
-
+    const modal = document.getElementById("atsResumeModal");
     if (!modal) return;
-
     modal.hidden = true;
     modal.style.display = "none";
 
@@ -466,968 +478,402 @@ function closeATSResumeBuilder() {
     if (builderForm) builderForm.reset();
 
     const resultPanel = document.getElementById("atsScorePanel");
-    if (resultPanel) resultPanel.hidden = true;
+    if (resultPanel) { resultPanel.hidden = true; resultPanel.style.display = "none"; }
 
     const errorBox = document.getElementById("ats-builder-error");
-    if (errorBox) {
-        errorBox.hidden = true;
-        errorBox.textContent = "";
-    }
+    if (errorBox) { errorBox.hidden = true; errorBox.textContent = ""; }
 }
 
-
 /* ---------------------------------------------------------
-   INITIALIZE
+   INITIALIZE — clears each list and seeds it with one
+   JS-generated row, so every visible field is one the data
+   collector below actually knows how to read.
 --------------------------------------------------------- */
 
 function initializeATSBuilder() {
+    const skills = document.getElementById("ats-skills-list");
+    if (skills) { skills.innerHTML = ""; addATSSkill(); addATSSkill(); addATSSkill(); }
 
-    const skills =
-        document.getElementById(
-            "atsSkillsContainer"
-        );
+    const experience = document.getElementById("ats-experience-list");
+    if (experience) { experience.innerHTML = ""; addATSExperience(); }
 
-    if (
-        skills &&
-        skills.children.length === 0
-    ) {
-        addATSSkill();
-        addATSSkill();
-        addATSSkill();
-    }
+    const education = document.getElementById("ats-education-list");
+    if (education) { education.innerHTML = ""; addATSEducation(); }
 
-    const experience =
-        document.getElementById(
-            "atsExperienceContainer"
-        );
+    const projects = document.getElementById("ats-projects-list");
+    if (projects) { projects.innerHTML = ""; addATSProject(); }
 
-    if (
-        experience &&
-        experience.children.length === 0
-    ) {
-        addATSExperience();
-    }
+    const certifications = document.getElementById("ats-certifications-list");
+    if (certifications) { certifications.innerHTML = ""; addATSCertification(); }
 
-    const education =
-        document.getElementById(
-            "atsEducationContainer"
-        );
-
-    if (
-        education &&
-        education.children.length === 0
-    ) {
-        addATSEducation();
-    }
-
-    const projects =
-        document.getElementById(
-            "atsProjectsContainer"
-        );
-
-    if (
-        projects &&
-        projects.children.length === 0
-    ) {
-        addATSProject();
-    }
+    const achievements = document.getElementById("ats-achievements-list");
+    if (achievements) { achievements.innerHTML = ""; addATSAchievement(); }
 }
-
 
 /* ---------------------------------------------------------
    SKILLS
+   Note: collectATSResumeData() reads these by class (".ats-skill"),
+   so adding id/for/autocomplete here is safe and doesn't require
+   any change to the data-collection logic below.
 --------------------------------------------------------- */
 
 function addATSSkill() {
-
     atsSkillCount++;
-
-    const container =
-        document.getElementById(
-            "atsSkillsContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-inline-item";
-
+    const container = document.getElementById("ats-skills-list");
+    if (!container) return;
+    const uid = `ats-skill-${atsSkillCount}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-list-item";
     wrapper.innerHTML = `
-        <input
-            type="text"
-            class="ats-skill"
-            placeholder="Skill"
-        >
-
-        <button
-            type="button"
-            class="remove-button"
-            onclick="this.parentElement.remove()"
-        >
-            Remove
-        </button>
+        <label for="${uid}" class="visually-hidden">Skill</label>
+        <input id="${uid}" type="text" class="ats-skill" placeholder="Skill" autocomplete="off">
+        <button type="button" class="remove-builder-item" aria-label="Remove skill" onclick="this.parentElement.remove()">×</button>
     `;
-
     container.appendChild(wrapper);
 }
-
 
 /* ---------------------------------------------------------
    EXPERIENCE
 --------------------------------------------------------- */
 
 function addATSExperience() {
-
     atsExperienceCount++;
-
-    const container =
-        document.getElementById(
-            "atsExperienceContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-repeat-card";
-
+    const container = document.getElementById("ats-experience-list");
+    if (!container) return;
+    const n = atsExperienceCount;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-repeat-card";
     wrapper.innerHTML = `
-
         <div class="repeat-card-header">
-
-            <strong>
-                Experience ${atsExperienceCount}
-            </strong>
-
-            <button
-                type="button"
-                class="remove-button"
-                onclick="this.parentElement.parentElement.remove()"
-            >
-                Remove
-            </button>
-
+            <strong>Experience ${n}</strong>
+            <button type="button" class="remove-button" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-
         <div class="builder-grid">
-
-            <input
-                class="ats-job-title"
-                type="text"
-                placeholder="Job Title"
-            >
-
-            <input
-                class="ats-company"
-                type="text"
-                placeholder="Company"
-            >
-
-            <input
-                class="ats-exp-location"
-                type="text"
-                placeholder="Location"
-            >
-
-            <input
-                class="ats-start-date"
-                type="text"
-                placeholder="Start Date"
-            >
-
-            <input
-                class="ats-end-date"
-                type="text"
-                placeholder="End Date / Present"
-            >
-
+            <div class="builder-field">
+                <label for="exp-title-${n}">Job Title</label>
+                <input id="exp-title-${n}" class="ats-job-title" type="text" placeholder="Technical Support Engineer" autocomplete="organization-title">
+            </div>
+            <div class="builder-field">
+                <label for="exp-company-${n}">Company</label>
+                <input id="exp-company-${n}" class="ats-company" type="text" placeholder="Company" autocomplete="organization">
+            </div>
+            <div class="builder-field">
+                <label for="exp-location-${n}">Location</label>
+                <input id="exp-location-${n}" class="ats-exp-location" type="text" placeholder="Location" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="exp-start-${n}">Start Date</label>
+                <input id="exp-start-${n}" class="ats-start-date" type="text" placeholder="Start Date" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="exp-end-${n}">End Date / Present</label>
+                <input id="exp-end-${n}" class="ats-end-date" type="text" placeholder="End Date / Present" autocomplete="off">
+            </div>
         </div>
-
-        <textarea
-            class="ats-exp-description"
-            rows="5"
-            placeholder="Responsibilities and achievements. Use one bullet per line."
-        ></textarea>
+        <div class="builder-field">
+            <label for="exp-desc-${n}">Responsibilities and achievements</label>
+            <textarea id="exp-desc-${n}" class="ats-exp-description" rows="5" placeholder="Responsibilities and achievements. Use one bullet per line." autocomplete="off"></textarea>
+        </div>
     `;
-
     container.appendChild(wrapper);
 }
-
 
 /* ---------------------------------------------------------
    EDUCATION
 --------------------------------------------------------- */
 
 function addATSEducation() {
-
     atsEducationCount++;
-
-    const container =
-        document.getElementById(
-            "atsEducationContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-repeat-card";
-
+    const container = document.getElementById("ats-education-list");
+    if (!container) return;
+    const n = atsEducationCount;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-repeat-card";
     wrapper.innerHTML = `
-
         <div class="repeat-card-header">
-
-            <strong>
-                Education ${atsEducationCount}
-            </strong>
-
-            <button
-                type="button"
-                class="remove-button"
-                onclick="this.parentElement.parentElement.remove()"
-            >
-                Remove
-            </button>
-
+            <strong>Education ${n}</strong>
+            <button type="button" class="remove-button" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-
         <div class="builder-grid">
-
-            <input
-                class="ats-degree"
-                type="text"
-                placeholder="Degree"
-            >
-
-            <input
-                class="ats-institution"
-                type="text"
-                placeholder="Institution"
-            >
-
-            <input
-                class="ats-edu-location"
-                type="text"
-                placeholder="Location"
-            >
-
-            <input
-                class="ats-edu-start"
-                type="text"
-                placeholder="Start Date"
-            >
-
-            <input
-                class="ats-edu-end"
-                type="text"
-                placeholder="End Date"
-            >
-
-            <input
-                class="ats-grade"
-                type="text"
-                placeholder="GPA / Percentage"
-            >
-
+            <div class="builder-field">
+                <label for="edu-degree-${n}">Degree</label>
+                <input id="edu-degree-${n}" class="ats-degree" type="text" placeholder="Degree" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="edu-institution-${n}">Institution</label>
+                <input id="edu-institution-${n}" class="ats-institution" type="text" placeholder="Institution" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="edu-location-${n}">Location</label>
+                <input id="edu-location-${n}" class="ats-edu-location" type="text" placeholder="Location" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="edu-start-${n}">Start Date</label>
+                <input id="edu-start-${n}" class="ats-edu-start" type="text" placeholder="Start Date" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="edu-end-${n}">End Date</label>
+                <input id="edu-end-${n}" class="ats-edu-end" type="text" placeholder="End Date" autocomplete="off">
+            </div>
+            <div class="builder-field">
+                <label for="edu-grade-${n}">GPA / Percentage</label>
+                <input id="edu-grade-${n}" class="ats-grade" type="text" placeholder="GPA / Percentage" autocomplete="off">
+            </div>
         </div>
     `;
-
     container.appendChild(wrapper);
 }
-
 
 /* ---------------------------------------------------------
    PROJECTS
 --------------------------------------------------------- */
 
 function addATSProject() {
-
     atsProjectCount++;
-
-    const container =
-        document.getElementById(
-            "atsProjectsContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-repeat-card";
-
+    const container = document.getElementById("ats-projects-list");
+    if (!container) return;
+    const n = atsProjectCount;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-repeat-card";
     wrapper.innerHTML = `
-
         <div class="repeat-card-header">
-
-            <strong>
-                Project ${atsProjectCount}
-            </strong>
-
-            <button
-                type="button"
-                class="remove-button"
-                onclick="this.parentElement.parentElement.remove()"
-            >
-                Remove
-            </button>
-
+            <strong>Project ${n}</strong>
+            <button type="button" class="remove-button" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>
-
-        <input
-            class="ats-project-name"
-            type="text"
-            placeholder="Project Name"
-        >
-
-        <textarea
-            class="ats-project-description"
-            rows="4"
-            placeholder="Project description"
-        ></textarea>
-
-        <input
-            class="ats-project-technologies"
-            type="text"
-            placeholder="Technologies (comma separated)"
-        >
+        <div class="builder-field">
+            <label for="proj-name-${n}">Project Name</label>
+            <input id="proj-name-${n}" class="ats-project-name" type="text" placeholder="Project Name" autocomplete="off">
+        </div>
+        <div class="builder-field">
+            <label for="proj-desc-${n}">Description</label>
+            <textarea id="proj-desc-${n}" class="ats-project-description" rows="4" placeholder="Project description" autocomplete="off"></textarea>
+        </div>
+        <div class="builder-field">
+            <label for="proj-tech-${n}">Technologies</label>
+            <input id="proj-tech-${n}" class="ats-project-technologies" type="text" placeholder="Technologies (comma separated)" autocomplete="off">
+        </div>
     `;
-
     container.appendChild(wrapper);
 }
-
 
 /* ---------------------------------------------------------
    CERTIFICATIONS
 --------------------------------------------------------- */
 
 function addATSCertification() {
-
     atsCertificationCount++;
-
-    const container =
-        document.getElementById(
-            "atsCertificationsContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-inline-item";
-
+    const container = document.getElementById("ats-certifications-list");
+    if (!container) return;
+    const uid = `ats-cert-${atsCertificationCount}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-list-item";
     wrapper.innerHTML = `
-
-        <input
-            type="text"
-            class="ats-certification"
-            placeholder="Certification"
-        >
-
-        <button
-            type="button"
-            class="remove-button"
-            onclick="this.parentElement.remove()"
-        >
-            Remove
-        </button>
+        <label for="${uid}" class="visually-hidden">Certification</label>
+        <input id="${uid}" type="text" class="ats-certification" placeholder="Certification" autocomplete="off">
+        <button type="button" class="remove-builder-item" aria-label="Remove certification" onclick="this.parentElement.remove()">×</button>
     `;
-
     container.appendChild(wrapper);
 }
-
 
 /* ---------------------------------------------------------
    ACHIEVEMENTS
 --------------------------------------------------------- */
 
 function addATSAchievement() {
-
     atsAchievementCount++;
-
-    const container =
-        document.getElementById(
-            "atsAchievementsContainer"
-        );
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.className =
-        "builder-inline-item";
-
+    const container = document.getElementById("ats-achievements-list");
+    if (!container) return;
+    const uid = `ats-achv-${atsAchievementCount}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = "builder-list-item";
     wrapper.innerHTML = `
-
-        <input
-            type="text"
-            class="ats-achievement"
-            placeholder="Achievement"
-        >
-
-        <button
-            type="button"
-            class="remove-button"
-            onclick="this.parentElement.remove()"
-        >
-            Remove
-        </button>
+        <label for="${uid}" class="visually-hidden">Achievement</label>
+        <input id="${uid}" type="text" class="ats-achievement" placeholder="Achievement" autocomplete="off">
+        <button type="button" class="remove-builder-item" aria-label="Remove achievement" onclick="this.parentElement.remove()">×</button>
     `;
-
     container.appendChild(wrapper);
 }
 
-
 /* ---------------------------------------------------------
-   COLLECT DATA
+   COLLECT DATA — ids here now match templates/index.html
 --------------------------------------------------------- */
 
 function collectATSResumeData() {
-
     const getValue = (id) => {
-
-        const element =
-            document.getElementById(id);
-
-        return element
-            ? element.value.trim()
-            : "";
+        const element = document.getElementById(id);
+        return element ? element.value.trim() : "";
     };
 
+    const skills = [...document.querySelectorAll(".ats-skill")]
+        .map(el => el.value.trim())
+        .filter(Boolean);
 
-    const skills = [
-        ...document.querySelectorAll(
-            ".ats-skill"
-        )
-    ]
-    .map(
-        element => element.value.trim()
-    )
-    .filter(Boolean);
+    const experience = [...document.querySelectorAll("#ats-experience-list .builder-repeat-card")]
+        .map(card => ({
+            job_title: card.querySelector(".ats-job-title")?.value.trim() || "",
+            company: card.querySelector(".ats-company")?.value.trim() || "",
+            location: card.querySelector(".ats-exp-location")?.value.trim() || "",
+            start_date: card.querySelector(".ats-start-date")?.value.trim() || "",
+            end_date: card.querySelector(".ats-end-date")?.value.trim() || "",
+            description: card.querySelector(".ats-exp-description")?.value.trim() || "",
+        }));
 
+    const education = [...document.querySelectorAll("#ats-education-list .builder-repeat-card")]
+        .map(card => ({
+            degree: card.querySelector(".ats-degree")?.value.trim() || "",
+            institution: card.querySelector(".ats-institution")?.value.trim() || "",
+            location: card.querySelector(".ats-edu-location")?.value.trim() || "",
+            start_date: card.querySelector(".ats-edu-start")?.value.trim() || "",
+            end_date: card.querySelector(".ats-edu-end")?.value.trim() || "",
+            grade: card.querySelector(".ats-grade")?.value.trim() || "",
+        }));
 
-    const experience = [
-        ...document.querySelectorAll(
-            "#atsExperienceContainer .builder-repeat-card"
-        )
-    ]
-    .map(card => {
+    const projects = [...document.querySelectorAll("#ats-projects-list .builder-repeat-card")]
+        .map(card => ({
+            name: card.querySelector(".ats-project-name")?.value.trim() || "",
+            description: card.querySelector(".ats-project-description")?.value.trim() || "",
+            technologies: (card.querySelector(".ats-project-technologies")?.value || "")
+                .split(",").map(v => v.trim()).filter(Boolean),
+        }));
 
-        return {
+    const certifications = [...document.querySelectorAll(".ats-certification")]
+        .map(el => el.value.trim())
+        .filter(Boolean);
 
-            job_title:
-                card.querySelector(
-                    ".ats-job-title"
-                )?.value.trim() || "",
+    const achievements = [...document.querySelectorAll(".ats-achievement")]
+        .map(el => el.value.trim())
+        .filter(Boolean);
 
-            company:
-                card.querySelector(
-                    ".ats-company"
-                )?.value.trim() || "",
-
-            location:
-                card.querySelector(
-                    ".ats-exp-location"
-                )?.value.trim() || "",
-
-            start_date:
-                card.querySelector(
-                    ".ats-start-date"
-                )?.value.trim() || "",
-
-            end_date:
-                card.querySelector(
-                    ".ats-end-date"
-                )?.value.trim() || "",
-
-            description:
-                card.querySelector(
-                    ".ats-exp-description"
-                )?.value.trim() || "",
-        };
-    });
-
-
-    const education = [
-        ...document.querySelectorAll(
-            "#atsEducationContainer .builder-repeat-card"
-        )
-    ]
-    .map(card => {
-
-        return {
-
-            degree:
-                card.querySelector(
-                    ".ats-degree"
-                )?.value.trim() || "",
-
-            institution:
-                card.querySelector(
-                    ".ats-institution"
-                )?.value.trim() || "",
-
-            location:
-                card.querySelector(
-                    ".ats-edu-location"
-                )?.value.trim() || "",
-
-            start_date:
-                card.querySelector(
-                    ".ats-edu-start"
-                )?.value.trim() || "",
-
-            end_date:
-                card.querySelector(
-                    ".ats-edu-end"
-                )?.value.trim() || "",
-
-            grade:
-                card.querySelector(
-                    ".ats-grade"
-                )?.value.trim() || "",
-        };
-    });
-
-
-    const projects = [
-        ...document.querySelectorAll(
-            "#atsProjectsContainer .builder-repeat-card"
-        )
-    ]
-    .map(card => {
-
-        return {
-
-            name:
-                card.querySelector(
-                    ".ats-project-name"
-                )?.value.trim() || "",
-
-            description:
-                card.querySelector(
-                    ".ats-project-description"
-                )?.value.trim() || "",
-
-            technologies:
-                (
-                    card.querySelector(
-                        ".ats-project-technologies"
-                    )?.value || ""
-                )
-                .split(",")
-                .map(value => value.trim())
-                .filter(Boolean),
-        };
-    });
-
-
-    const certifications = [
-        ...document.querySelectorAll(
-            ".ats-certification"
-        )
-    ]
-    .map(
-        element => element.value.trim()
-    )
-    .filter(Boolean);
-
-
-    const achievements = [
-        ...document.querySelectorAll(
-            ".ats-achievement"
-        )
-    ]
-    .map(
-        element => element.value.trim()
-    )
-    .filter(Boolean);
-
-
-    const languages =
-        getValue("ats_languages")
-            .split(",")
-            .map(
-                value => value.trim()
-            )
-            .filter(Boolean);
-
+    const languages = getValue("ats-languages")
+        .split(",").map(v => v.trim()).filter(Boolean);
 
     return {
-
         personal: {
-
-            name:
-                getValue("ats_name"),
-
-            title:
-                getValue("ats_title"),
-
-            email:
-                getValue("ats_email"),
-
-            phone:
-                getValue("ats_phone"),
-
-            location:
-                getValue("ats_location"),
-
-            linkedin:
-                getValue("ats_linkedin"),
-
-            github:
-                getValue("ats_github"),
-
-            portfolio:
-                getValue("ats_portfolio"),
+            name: getValue("ats-name"),
+            title: "",
+            email: getValue("ats-email"),
+            phone: getValue("ats-phone"),
+            location: getValue("ats-location"),
+            linkedin: getValue("ats-linkedin"),
+            github: "",
+            portfolio: getValue("ats-website"),
         },
-
-        summary:
-            getValue("ats_summary"),
-
+        summary: getValue("ats-summary"),
         skills,
-
         experience,
-
         education,
-
         projects,
-
         certifications,
-
         achievements,
-
         languages,
     };
 }
-
 
 /* ---------------------------------------------------------
    PREVIEW / ATS CHECK
 --------------------------------------------------------- */
 
 async function previewATSResume() {
-
-    const resume =
-        collectATSResumeData();
-
+    const resume = collectATSResumeData();
     if (!resume.personal.name) {
-
-        alert(
-            "Please enter your full name."
-        );
-
+        alert("Please enter your full name.");
         return;
     }
 
-
-    const jobDescription =
-        document.getElementById(
-            "ats_job_description"
-        )?.value.trim() || "";
-
+    const jobDescription = document.getElementById("ats-job-description")?.value.trim() || "";
 
     try {
-
-        const response =
-            await fetch(
-                "/preview-ats-resume",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        resume,
-                        job_description:
-                            jobDescription,
-                    }),
-                }
-            );
-
-
-        const result =
-            await response.json();
-
-
+        const response = await fetch("/preview-ats-resume", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resume, job_description: jobDescription }),
+        });
+        const result = await response.json();
         if (!result.success) {
-
-            alert(
-                result.error ||
-                "Could not generate preview."
-            );
-
+            alert(result.error || "Could not generate preview.");
             return;
         }
-
-
         displayATSResult(result);
-
     } catch (error) {
-
         console.error(error);
-
-        alert(
-            "Unable to connect to the server."
-        );
+        alert("Unable to connect to the server.");
     }
 }
-
 
 /* ---------------------------------------------------------
    DISPLAY ATS RESULT
 --------------------------------------------------------- */
 
 function displayATSResult(result) {
+    const scorePanel = document.getElementById("atsScorePanel");
+    const scoreValue = document.getElementById("atsScoreValue");
+    const scoreMessage = document.getElementById("atsScoreMessage");
 
-    const scorePanel =
-        document.getElementById(
-            "atsScorePanel"
-        );
+    if (scorePanel) { scorePanel.hidden = false; scorePanel.style.display = "flex"; }
 
-    const scoreValue =
-        document.getElementById(
-            "atsScoreValue"
-        );
-
-    const scoreMessage =
-        document.getElementById(
-            "atsScoreMessage"
-        );
-
-
-    if (scorePanel) {
-
-        scorePanel.style.display =
-            "flex";
-    }
-
-
-    const score =
-        result.ats?.score || 0;
-
-
-    if (scoreValue) {
-
-        scoreValue.textContent =
-            score;
-    }
-
+    const score = result.ats?.score || 0;
+    if (scoreValue) scoreValue.textContent = score;
 
     if (scoreMessage) {
-
-        if (score >= 85) {
-
-            scoreMessage.textContent =
-                "Strong ATS-friendly structure.";
-
-        } else if (score >= 70) {
-
-            scoreMessage.textContent =
-                "Good structure with some areas to improve.";
-
-        } else {
-
-            scoreMessage.textContent =
-                "Several resume sections should be improved.";
-        }
+        if (score >= 85) scoreMessage.textContent = "Strong ATS-friendly structure.";
+        else if (score >= 70) scoreMessage.textContent = "Good structure with some areas to improve.";
+        else scoreMessage.textContent = "Several resume sections should be improved.";
     }
 
-
-    const recommendationPanel =
-        document.getElementById(
-            "atsRecommendations"
-        );
-
-    const recommendationList =
-        document.getElementById(
-            "atsRecommendationsList"
-        );
-
-
-    if (
-        recommendationPanel &&
-        recommendationList
-    ) {
-
+    const recommendationList = document.getElementById("atsRecommendationsList");
+    if (recommendationList) {
         recommendationList.innerHTML = "";
-
-        const recommendations =
-            result.ats?.recommendations || [];
-
-
-        recommendations.forEach(
-            recommendation => {
-
-                const li =
-                    document.createElement("li");
-
-                li.textContent =
-                    recommendation;
-
-                recommendationList.appendChild(
-                    li
-                );
-            }
-        );
-
-
-        if (recommendations.length) {
-
-            recommendationPanel.style.display =
-                "block";
-
-        } else {
-
-            recommendationPanel.style.display =
-                "none";
-        }
+        (result.ats?.recommendations || []).forEach(rec => {
+            const li = document.createElement("li");
+            li.textContent = rec;
+            recommendationList.appendChild(li);
+        });
     }
 
-
-    const preview =
-        document.getElementById(
-            "atsResumePreview"
-        );
-
-    const previewText =
-        document.getElementById(
-            "atsResumePreviewText"
-        );
-
-
-    if (preview && previewText) {
-
-        previewText.textContent =
-            result.resume_text || "";
-
-        preview.style.display =
-            "block";
-    }
-
-
-    const downloads =
-        document.getElementById(
-            "atsDownloadActions"
-        );
-
-    if (downloads) {
-
-        downloads.style.display =
-            "flex";
-    }
+    const previewContent = document.getElementById("atsResumePreviewContent");
+    if (previewContent) previewContent.textContent = result.resume_text || "";
 }
-
 
 /* ---------------------------------------------------------
    DOWNLOAD
 --------------------------------------------------------- */
 
 async function downloadATSResume(format) {
-
-    const resume =
-        collectATSResumeData();
-
-
+    const resume = collectATSResumeData();
     if (!resume.personal.name) {
-
-        alert(
-            "Please enter your full name."
-        );
-
+        alert("Please enter your full name.");
         return;
     }
 
-
     try {
-
-        const response =
-            await fetch(
-                "/download-ats-resume",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        resume,
-                        format,
-                    }),
-                }
-            );
-
+        const response = await fetch("/download-ats-resume", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resume, format }),
+        });
 
         if (!response.ok) {
-
-            const error =
-                await response.json();
-
-            alert(
-                error.error ||
-                "Could not generate the resume."
-            );
-
+            const error = await response.json();
+            alert(error.error || "Could not generate the resume.");
             return;
         }
 
-
-        const blob =
-            await response.blob();
-
-
-        const url =
-            window.URL.createObjectURL(
-                blob
-            );
-
-
-        const link =
-            document.createElement("a");
-
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
         link.href = url;
-
-
-        const extension =
-            format === "pdf"
-                ? "pdf"
-                : "docx";
-
-
-        const safeName =
-            resume.personal.name
-                .replace(
-                    /[^a-zA-Z0-9_-]+/g,
-                    "_"
-                )
-                .replace(
-                    /^_+|_+$/g,
-                    ""
-                );
-
-
-        link.download =
-            `${safeName || "ATS_Resume"}_ATS_Resume.${extension}`;
-
-
+        const extension = format === "pdf" ? "pdf" : "docx";
+        const safeName = resume.personal.name.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+        link.download = `${safeName || "ATS_Resume"}_ATS_Resume.${extension}`;
         document.body.appendChild(link);
-
         link.click();
-
         link.remove();
-
         window.URL.revokeObjectURL(url);
-
     } catch (error) {
-
         console.error(error);
-
-        alert(
-            "Unable to download the resume."
-        );
+        alert("Unable to download the resume.");
     }
 }
+
+// Bind the "Create Resume" button (and modal close controls) as soon as the page loads.
+bindATSBuilderActions();
