@@ -1512,6 +1512,44 @@ main {
   margin-bottom: 20px;
 }
 
+.manual-skill-row {
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+  margin-bottom: 18px;
+}
+
+.manual-skill-row label,
+.summary-choice legend {
+  font: 11px var(--mono);
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.manual-skill-row .custom-role-row {
+  margin-top: 8px;
+}
+
+.summary-choice {
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  margin: 0 0 18px;
+  padding: 14px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.summary-choice label {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.summary-choice input {
+  accent-color: var(--amber);
+  margin-right: 5px;
+}
+
 .confirm-item {
   display: flex;
 
@@ -1711,6 +1749,51 @@ main {
   gap: 6px;
 
   margin: 8px 0 20px;
+}
+
+.resume-paper {
+  background: #fff;
+  color: #20201c;
+  max-height: 720px;
+  overflow: auto;
+  padding: 38px 44px;
+  margin: 8px 0 22px;
+  border: 1px solid var(--hairline);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.resume-paper__name {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.resume-paper__contact {
+  color: #65605a;
+  font: 12px/1.5 var(--sans);
+  margin: 0;
+}
+
+.resume-paper__section {
+  margin-top: 22px;
+}
+
+.resume-paper__section h4 {
+  border-bottom: 1px solid #d8d2c2;
+  color: #8a6d1f;
+  font: 700 13px var(--mono);
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.resume-paper__section p {
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 5px;
+  white-space: pre-wrap;
 }
 
 

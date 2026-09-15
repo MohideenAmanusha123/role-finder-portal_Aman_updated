@@ -31,6 +31,11 @@ SKILL_VOCABULARY = [
     "selenium", "manual testing", "bug tracking", "api testing", "load testing",
     "network administration", "windows server", "active directory", "vmware",
     "monitoring", "incident management", "sla management", "escalation handling",
+    "financial analysis", "financial reporting", "budgeting", "forecasting",
+    "accounting", "bookkeeping", "auditing", "risk management", "compliance",
+    "procurement", "business analysis", "operations management", "sales",
+    "marketing", "content writing", "recruiting", "human resources",
+    "process improvement", "conflict resolution",
 ]
 
 # Skills that are behavioral/interpersonal rather than tool-based — used to
@@ -149,6 +154,42 @@ ROLES = {
         "level": "mid",
         "required": ["python", "machine learning", "deep learning", "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy"],
         "preferred": ["statistics", "sql", "docker"],
+    },
+    "Financial Analyst": {
+        "description": "Analyzing financial performance, budgets, forecasts, and business decisions.",
+        "level": "mid",
+        "required": ["excel", "financial analysis", "financial reporting", "budgeting", "forecasting", "communication"],
+        "preferred": ["accounting", "power bi", "data visualization", "sql", "business analysis"],
+    },
+    "Accountant": {
+        "description": "Preparing accurate financial records, reconciliations, and compliance reports.",
+        "level": "mid",
+        "required": ["accounting", "bookkeeping", "excel", "financial reporting", "auditing", "compliance"],
+        "preferred": ["financial analysis", "budgeting", "forecasting", "sql"],
+    },
+    "Business Analyst": {
+        "description": "Translating business needs into measurable processes, requirements, and improvements.",
+        "level": "mid",
+        "required": ["business analysis", "data analysis", "communication", "stakeholder management", "problem solving"],
+        "preferred": ["sql", "excel", "project management", "process improvement", "jira"],
+    },
+    "Operations Manager": {
+        "description": "Improving day-to-day operations, service delivery, and team performance.",
+        "level": "mid",
+        "required": ["operations management", "project management", "communication", "leadership", "problem solving"],
+        "preferred": ["budgeting", "procurement", "sla management", "excel", "business analysis"],
+    },
+    "Sales and Marketing Professional": {
+        "description": "Growing customer relationships, pipeline, and brand engagement through commercial strategy.",
+        "level": "mid",
+        "required": ["sales", "communication", "customer success", "account management", "problem solving"],
+        "preferred": ["marketing", "crm", "salesforce", "content writing", "data analysis"],
+    },
+    "Human Resources Specialist": {
+        "description": "Supporting recruitment, employee relations, onboarding, and people operations.",
+        "level": "mid",
+        "required": ["human resources", "recruiting", "communication", "onboarding", "stakeholder management"],
+        "preferred": ["project management", "compliance", "excel", "conflict resolution"],
     },
 }
 

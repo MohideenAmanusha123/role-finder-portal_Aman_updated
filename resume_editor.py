@@ -6,8 +6,12 @@ skills/applications the user confirms. Supports a structured preview/diff.
 """
 
 import io
+import json
+import os
 import re
 from html import escape
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -26,12 +30,12 @@ HAIRLINE = colors.HexColor("#D8D2C2")
 
 BULLET_RE = re.compile(r"^\s*[-•*\u2022\u25CF\u2013]\s+")
 SECTION_HEADER_PATTERN = re.compile(
-    r"^\s*(summary|objective|profile|experience|work experience|professional experience|"
+    r"^\s*(summary|professional summary|objective|profile|experience|work experience|professional experience|"
     r"education|skills|technical skills|projects|certifications|achievements)\s*:?\s*$",
     re.IGNORECASE,
 )
 HEADER_MAP = {
-    "summary": "Summary", "objective": "Summary", "profile": "Summary",
+    "summary": "Summary", "professional summary": "Summary", "objective": "Summary", "profile": "Summary",
     "experience": "Experience", "work experience": "Experience",
     "professional experience": "Experience", "education": "Education",
     "skills": "Skills", "technical skills": "Skills", "projects": "Projects",
@@ -77,26 +81,83 @@ def _section_text(sections, header):
     return ""
 
 
-def rewrite_summary(original_summary: str, skills, applications) -> str:
+def rewrite_summary(original_summary: str, skills, applications, role_name=None, experience_signal=None) -> str:
     """Rewrite without claiming unverified experience or inventing projects."""
     labels = [format_skill_label(s) for s in skills]
     apps = [a for vals in (applications or {}).values() for a in vals if a]
     apps = list(dict.fromkeys(apps))
     if original_summary.strip():
         base = re.sub(r"\s+", " ", original_summary).strip()
-        addition = f" Core skills include {', '.join(labels)}." if labels else ""
+        role_text = f" for {role_name}" if role_name else ""
+        addition = f" Targeted{role_text} with core skills including {', '.join(labels)}." if labels else ""
         if apps:
             addition += f" Confirmed applications/tools include {', '.join(apps)}."
+        if experience_signal:
+            addition += f" Experience level: {experience_signal}."
         return (base + addition).strip()
     if not labels:
         return ""
-    text = f"Professional with skills in {', '.join(labels)}."
+    role_text = f" for {role_name}" if role_name else ""
+    text = f"Professional{role_text} with skills in {', '.join(labels)}."
     if apps:
         text += f" Confirmed applications/tools include {', '.join(apps)}."
     return text
 
 
-def build_edited_resume(original_text: str, matched_skills, confirmed_skills, applications=None) -> dict:
+def generate_ai_summary(original_summary, skills, applications, role_name=None, experience_signal=None):
+    """Generate a summary through an optional OpenAI-compatible endpoint."""
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise ValueError("AI summary is not configured. Set OPENAI_API_KEY before selecting AI-assisted summary.")
+    endpoint = os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    labels = ", ".join(format_skill_label(s) for s in skills)
+    apps = ", ".join(dict.fromkeys(a for vals in (applications or {}).values() for a in vals if a))
+    prompt = (
+        "Write a concise, professional resume summary in 2-4 sentences. "
+        "Do not invent employers, achievements, metrics, certifications, or experience. "
+        f"Target role: {role_name or 'the target role'}. "
+        f"Existing summary: {original_summary or 'None'}. "
+        f"Confirmed skills: {labels or 'None'}. Confirmed tools: {apps or 'None'}. "
+        f"Experience signal: {experience_signal or 'Not provided'}."
+    )
+    payload = json.dumps({
+        "model": model,
+        "temperature": 0.3,
+        "messages": [
+            {"role": "system", "content": "You edit resumes conservatively and return only the summary text."},
+            {"role": "user", "content": prompt},
+        ],
+    }).encode("utf-8")
+    req = urllib_request.Request(
+        endpoint,
+        data=payload,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=20) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError) as exc:
+        raise ValueError(f"AI summary service could not be reached: {exc}") from exc
+    try:
+        summary = result["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError, TypeError, AttributeError) as exc:
+        raise ValueError("AI summary service returned an invalid response.") from exc
+    if not summary:
+        raise ValueError("AI summary service returned an empty summary.")
+    return summary
+
+
+def build_edited_resume(
+    original_text: str,
+    matched_skills,
+    confirmed_skills,
+    applications=None,
+    summary_mode="update",
+    role_name=None,
+    experience_signal=None,
+) -> dict:
     preamble, sections = _split_sections(original_text)
     changes = []
     applications = applications or {}
@@ -119,12 +180,22 @@ def build_edited_resume(original_text: str, matched_skills, confirmed_skills, ap
         changes.append(f"Included skills you confirmed you know: {labels}.")
 
     original_summary = _section_text(_split_sections(original_text)[1], "Summary")
-    new_summary = rewrite_summary(original_summary, all_skills, applications)
+    if summary_mode == "keep":
+        new_summary = original_summary
+    elif summary_mode == "ai":
+        new_summary = generate_ai_summary(original_summary, all_skills, applications, role_name, experience_signal)
+    elif summary_mode == "update":
+        new_summary = rewrite_summary(original_summary, all_skills, applications, role_name, experience_signal)
+    else:
+        raise ValueError("Summary mode must be keep, update, or ai.")
     summary_idx = next((i for i, (h, _) in enumerate(sections) if h == "Summary"), None)
     if new_summary:
         if summary_idx is not None:
             sections[summary_idx] = ("Summary", [new_summary])
-            changes.append("Rewrote the Summary to reflect the confirmed skills and applications.")
+            changes.append(
+                "Updated the Summary for the target role and confirmed skills."
+                if summary_mode != "keep" else "Kept the existing Summary unchanged."
+            )
         else:
             insert_at = 0
             sections.insert(insert_at, ("Summary", [new_summary]))

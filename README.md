@@ -9,11 +9,14 @@ A Flask resume-analysis app that supports role matching, ATS scoring, pasted job
 - **Experience signal:** detects years (`4 years`, `5+ years`) and seniority wording (`junior`, `senior`, `lead`, etc.). A small modifier is applied to role fit; it never overrides skills.
 - **Paste-a-JD mode:** upload a resume and paste a job description to extract recognized JD skills and compare them directly.
 - **Before/after tracking:** the browser keeps the previous ATS score and detected skills for each filename and shows the score delta on the next analysis.
-- **Diff/preview:** improved resumes are previewed before download. The user must explicitly confirm the final PDF or Word download.
+- **Diff/preview:** improved resumes show a full resume-paper preview and a summary diff before download. The user must explicitly confirm the final PDF or Word download.
 - **Custom roles:** a pasted JD can be saved as a named custom role. It is added to `roles_data.py` and the current process immediately.
 - **Interview prep:** missing skills generate up to three likely interview questions each.
 - **Applications/tools:** common applications are mapped to skills. The user must explicitly confirm applications they have actually used.
-- **Summary update:** the improved resume Summary is rewritten conservatively from the existing Summary plus confirmed skills/applications. It does not invent achievements or experience.
+- **Summary choices:** users can keep the existing Summary, update it for the selected role and confirmed skills/experience, or use an optional AI-assisted summary.
+- **AI-assisted summary:** set `OPENAI_API_KEY` to enable the OpenAI-compatible summary option. `OPENAI_API_URL` and `OPENAI_MODEL` can override the endpoint and model (defaults are the OpenAI chat completions endpoint and `gpt-4o-mini`). The key stays server-side and is never sent to the browser.
+- **Broader roles:** role matching includes financial, accounting, business analysis, operations, sales/marketing, and HR roles alongside technical roles.
+- **Manual skills:** the confirmation step accepts skills typed under “Add a skill manually” for skills outside the built-in vocabulary.
 - **Output naming:** `ayman.pdf` → `ayman_improved_resume.pdf`; `ayman.docx` → `ayman_improved_resume.docx`.
 - **PDF safety:** scanned/image-only PDFs produce a clear OCR-not-enabled error.
 - **Debug:** Flask debug mode is controlled with `FLASK_DEBUG=1`; it is off by default.

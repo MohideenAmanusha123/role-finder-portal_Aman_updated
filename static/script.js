@@ -14,6 +14,8 @@ const planPanel = $("plan-panel");
 const confirmPanel = $("confirm-panel");
 const confirmList = $("confirm-list");
 const applicationList = $("application-list");
+const manualSkillInput = $("manual-skill-input");
+const addManualSkillButton = $("add-manual-skill");
 const previewButton = $("preview-resume-button");
 const previewPanel = $("resume-preview");
 const generateNote = $("generate-note");
@@ -198,9 +200,9 @@ function renderFocusSkills(focusSkills) {
 }
 function renderConfirmPanel(plan) {
   const missing = plan.missing_skills || [];
-  confirmPanel.hidden = !missing.length;
-  if (!missing.length) return;
+  confirmPanel.hidden = false;
   confirmList.innerHTML = missing.map((skill, i) => `<label class="confirm-item"><input type="checkbox" value="${esc(skill)}" id="confirm-${i}">${esc(skill)}</label>`).join("");
+  if (!missing.length) confirmList.innerHTML = `<p class="plan-empty">No missing role skills detected. You can still choose how to handle your Summary.</p>`;
   applicationList.innerHTML = "";
   generateError.hidden = true; generateNote.hidden = true; previewPanel.hidden = true;
   confirmList.querySelectorAll("input").forEach(cb => cb.addEventListener("change", renderApplicationChoices));
@@ -297,6 +299,9 @@ function getApplications() {
   });
   return result;
 }
+function getSummaryMode() {
+  return document.querySelector("input[name='summary-mode']:checked")?.value || "update";
+}
 function editorPayload(format=null) {
   if (!lastAnalysisData) return { resume_text: "", matched_skills: [], confirmed_skills: [], applications: {}, filename: "resume", format };
 
@@ -306,6 +311,9 @@ function editorPayload(format=null) {
     matched_skills: targetPlan.matched_skills || [],
     confirmed_skills: getConfirmedSkills(),
     applications: getApplications(),
+    summary_mode: getSummaryMode(),
+    role_name: targetPlan.role || "",
+    experience_signal: lastAnalysisData.experience_signal?.level || "",
     filename: lastAnalysisData.filename || "resume",
     format
   };
@@ -318,8 +326,14 @@ previewButton.addEventListener("click", async () => {
     const data = await response.json(); if (!response.ok) throw new Error(data.error || "Could not build preview.");
     pendingEditedData = editorPayload();
     const d = data.diff || {};
+    const resume = data.resume || {preamble: [], sections: []};
+    const resumeHtml = [
+      ...(resume.preamble || []).map((line, index) => `<p class="${index === 0 ? "resume-paper__name" : "resume-paper__contact"}">${esc(line)}</p>`),
+      ...(resume.sections || []).map(([heading, lines]) => `<section class="resume-paper__section"><h4>${esc(heading)}</h4>${(lines || []).filter(Boolean).map(line => `<p>${esc(line)}</p>`).join("")}</section>`)
+    ].join("");
     previewPanel.hidden = false;
     previewPanel.innerHTML = `<p class="confirm-panel__eyebrow">DIFF / PREVIEW</p><h3 class="confirm-panel__title">Review before download</h3>
+      <p class="preview-label">FULL RESUME OUTPUT</p><div class="resume-paper">${resumeHtml || "<p>No resume content could be previewed.</p>"}</div>
       <div class="preview-grid"><div><p class="preview-label">SUMMARY BEFORE</p><div class="preview-copy">${esc(d.summary_before || "No summary detected.")}</div></div>
       <div><p class="preview-label">SUMMARY AFTER</p><div class="preview-copy preview-copy--after">${esc(d.summary_after || "No summary will be added.")}</div></div></div>
       <p class="preview-label">CONFIRMED APPLICATIONS</p><div class="preview-apps">${Object.entries(d.applications || {}).flatMap(([s, apps]) => apps.map(a => `<span class="skill-tag preferred">${esc(s)} → ${esc(a)}</span>`)).join("") || "None selected"}</div>
@@ -358,6 +372,25 @@ customRoleButton.addEventListener("click", async () => {
     customRoleNote.hidden = false; customRoleNote.textContent = `Saved "${data.role}" with ${data.skills.length} recognized skills.`;
   } catch (err) { customRoleNote.hidden = false; customRoleNote.textContent = err.message; }
   finally { customRoleButton.disabled = false; }
+});
+
+function addManualSkill() {
+  const value = manualSkillInput.value.trim();
+  if (!value) return;
+  const existing = Array.from(confirmList.querySelectorAll("input")).some(input => input.value.toLowerCase() === value.toLowerCase());
+  if (existing) { manualSkillInput.value = ""; return; }
+  const id = `manual-skill-${Date.now()}`;
+  const label = document.createElement("label");
+  label.className = "confirm-item";
+  label.innerHTML = `<input type="checkbox" value="${esc(value)}" id="${id}" checked>${esc(value)}`;
+  confirmList.appendChild(label);
+  label.querySelector("input").addEventListener("change", renderApplicationChoices);
+  manualSkillInput.value = "";
+  renderApplicationChoices();
+}
+addManualSkillButton.addEventListener("click", addManualSkill);
+manualSkillInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); addManualSkill(); }
 });
 
 // Restore role from URL query string.
