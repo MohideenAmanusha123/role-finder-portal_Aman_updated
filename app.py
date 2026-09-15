@@ -58,6 +58,46 @@ def improved_filename(filename, ext):
     return f"{safe_base(filename)}_improved_resume.{ext}"
 
 
+def _parse_experience_entries(lines):
+    date_pattern = re.compile(
+        r"^(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s.-]*)?"
+        r"\d{4}\s*(?:[-–—]|to)\s*(?:present|current|"
+        r"(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s.-]*)?\d{4})$",
+        re.I,
+    )
+    date_positions = [index for index, line in enumerate(lines) if date_pattern.match(line)]
+    if date_positions:
+        entries = []
+        previous_date = None
+        for position, date_index in enumerate(date_positions):
+            between = lines[(previous_date + 1) if previous_date is not None else 0:date_index]
+            header = between[-2:]
+            body = between[:-len(header)] if header else between
+            if entries and body:
+                entries[-1]["description"] = "\n".join(body)
+            dates = re.split(r"\s*(?:[-–—]|to)\s*", lines[date_index], maxsplit=1, flags=re.I)
+            entries.append({
+                "job_title": header[0] if header else "",
+                "company": header[1] if len(header) > 1 else "",
+                "start_date": dates[0].strip(),
+                "end_date": dates[1].strip() if len(dates) > 1 else "",
+                "description": "\n".join(body),
+            })
+            previous_date = date_index
+        trailing = lines[previous_date + 1:] if previous_date is not None else []
+        if trailing and entries:
+            entries[-1]["description"] = "\n".join(
+                [entries[-1]["description"], *trailing]
+            ).strip()
+        return entries
+
+    return [{
+        "job_title": lines[0] if lines else "",
+        "company": lines[1] if len(lines) > 1 else "",
+        "description": "\n".join(lines[2:]),
+    }] if lines else []
+
+
 def _parse_resume_for_builder(text):
     lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
     joined = "\n".join(lines)
@@ -111,10 +151,7 @@ def _parse_resume_for_builder(text):
         },
         "summary": summary,
         "skills": skills,
-        "experience": [{
-            "job_title": experience_lines[0] if experience_lines else "",
-            "description": "\n".join(experience_lines[1:]),
-        }] if experience_lines else [],
+        "experience": _parse_experience_entries(experience_lines),
         "education": [{
             "degree": education_lines[0] if education_lines else "",
             "institution": education_lines[1] if len(education_lines) > 1 else "",

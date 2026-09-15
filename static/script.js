@@ -489,6 +489,7 @@ function bindATSBuilderActions() {
         const experience = document.getElementById("ats-experience-list");
         if (experience && resume.experience?.length) {
             experience.innerHTML = "";
+            atsExperienceCount = 0;
             resume.experience.forEach(() => addATSExperience());
             [...experience.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
                 const item = resume.experience[index] || {};
@@ -504,6 +505,7 @@ function bindATSBuilderActions() {
         const education = document.getElementById("ats-education-list");
         if (education && resume.education?.length) {
             education.innerHTML = "";
+            atsEducationCount = 0;
             resume.education.forEach(() => addATSEducation());
             [...education.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
                 const item = resume.education[index] || {};
@@ -519,6 +521,7 @@ function bindATSBuilderActions() {
         const projects = document.getElementById("ats-projects-list");
         if (projects && resume.projects?.length) {
             projects.innerHTML = "";
+            atsProjectCount = 0;
             resume.projects.forEach(() => addATSProject());
             [...projects.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
                 const item = resume.projects[index] || {};
@@ -531,6 +534,7 @@ function bindATSBuilderActions() {
         const skills = document.getElementById("ats-skills-list");
         if (skills && resume.skills?.length) {
             skills.innerHTML = "";
+            atsSkillCount = 0;
             resume.skills.forEach(() => addATSSkill());
             [...skills.querySelectorAll(".ats-skill")].forEach((field, index) => {
                 field.value = resume.skills[index] || "";
@@ -540,6 +544,7 @@ function bindATSBuilderActions() {
         const certifications = document.getElementById("ats-certifications-list");
         if (certifications && resume.certifications?.length) {
             certifications.innerHTML = "";
+            atsCertificationCount = 0;
             resume.certifications.forEach(() => addATSCertification());
             [...certifications.querySelectorAll(".ats-certification")].forEach((field, index) => {
                 field.value = resume.certifications[index] || "";
@@ -549,6 +554,7 @@ function bindATSBuilderActions() {
         const achievements = document.getElementById("ats-achievements-list");
         if (achievements && resume.achievements?.length) {
             achievements.innerHTML = "";
+            atsAchievementCount = 0;
             resume.achievements.forEach(() => addATSAchievement());
             [...achievements.querySelectorAll(".ats-achievement")].forEach((field, index) => {
                 field.value = resume.achievements[index] || "";
