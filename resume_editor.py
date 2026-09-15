@@ -105,8 +105,8 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
 
 
 def generate_ai_summary(original_summary, skills, applications, role_name=None, experience_signal=None):
-    """Generate a summary with local Ollama by default, or an OpenAI-compatible service."""
-    provider = os.environ.get("AI_PROVIDER", "ollama").strip().lower()
+    """Generate a summary with OpenAI by default, or local Ollama when selected."""
+    provider = os.environ.get("AI_PROVIDER", "openai").strip().lower()
     if provider not in {"ollama", "openai"}:
         raise ValueError("AI_PROVIDER must be 'ollama' or 'openai'.")
     model = os.environ.get(
