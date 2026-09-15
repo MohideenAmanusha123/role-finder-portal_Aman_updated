@@ -21,6 +21,7 @@ from resume_builder import (
 from resume_matcher import (
     analyze_resume,
     analyze_text,
+    extract_text,
     UnsupportedFileType,
     ScannedPDFError,
     find_skills,
@@ -55,6 +56,111 @@ def safe_base(filename):
 
 def improved_filename(filename, ext):
     return f"{safe_base(filename)}_improved_resume.{ext}"
+
+
+def _parse_resume_for_builder(text):
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    joined = "\n".join(lines)
+    email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", joined)
+    phone_match = re.search(r"(?<!\d)(?:\+?\d[\d\s().-]{8,}\d)(?!\d)", joined)
+    link_match = re.search(r"https?://(?:www\.)?(?:linkedin\.com|github\.com)/[^\s|]+", joined, re.I)
+
+    heading_patterns = {
+        "summary": re.compile(r"^(?:professional\s+)?summary|profile|objective$", re.I),
+        "skills": re.compile(r"^(?:technical\s+)?skills|core\s+competencies|technologies$", re.I),
+        "experience": re.compile(r"^(?:work\s+)?experience|employment\s+history|professional\s+experience$", re.I),
+        "education": re.compile(r"^education|academic\s+background$", re.I),
+        "projects": re.compile(r"^projects?$", re.I),
+        "certifications": re.compile(r"^certifications?|licenses?$", re.I),
+        "achievements": re.compile(r"^achievements?|awards?$", re.I),
+        "languages": re.compile(r"^languages?$", re.I),
+    }
+    sections = {}
+    current = None
+    for line in lines:
+        matched = next((name for name, pattern in heading_patterns.items() if pattern.match(line)), None)
+        if matched:
+            current = matched
+            sections.setdefault(current, [])
+        elif current:
+            sections[current].append(line)
+
+    contact_line = next((line for line in lines if email_match and email_match.group(0) in line), "")
+    name = next((line for line in lines if line != contact_line and not re.search(r"@|https?://|\+?\d[\d\s().-]{8,}\d", line)), "")
+    skill_text = " ".join(sections.get("skills", []))
+    skills = sorted(find_skills(skill_text, SKILL_VOCABULARY))
+    for raw_skill in re.split(r"[,|;/•·]", skill_text):
+        raw_skill = raw_skill.strip()
+        if raw_skill and raw_skill.lower() not in {skill.lower() for skill in skills}:
+            skills.append(raw_skill)
+
+    summary = " ".join(sections.get("summary", []))
+    experience_lines = sections.get("experience", [])
+    education_lines = sections.get("education", [])
+    project_lines = sections.get("projects", [])
+    certifications = sections.get("certifications", [])
+    achievements = sections.get("achievements", [])
+    languages = [item.strip() for item in re.split(r"[,|;/]", " ".join(sections.get("languages", []))) if item.strip()]
+
+    return normalize_resume_data({
+        "personal": {
+            "name": name,
+            "email": email_match.group(0) if email_match else "",
+            "phone": phone_match.group(0).strip() if phone_match else "",
+            "linkedin": link_match.group(0) if link_match else "",
+        },
+        "summary": summary,
+        "skills": skills,
+        "experience": [{
+            "job_title": experience_lines[0] if experience_lines else "",
+            "description": "\n".join(experience_lines[1:]),
+        }] if experience_lines else [],
+        "education": [{
+            "degree": education_lines[0] if education_lines else "",
+            "institution": education_lines[1] if len(education_lines) > 1 else "",
+            "description": "\n".join(education_lines[2:]),
+        }] if education_lines else [],
+        "projects": [{
+            "name": project_lines[0] if project_lines else "",
+            "description": "\n".join(project_lines[1:]),
+        }] if project_lines else [],
+        "certifications": certifications,
+        "achievements": achievements,
+        "languages": languages,
+    })
+
+
+@app.route("/import-resume", methods=["POST"])
+def import_resume():
+    if "resume" not in request.files:
+        return jsonify({"success": False, "error": "Please select an existing resume file."}), 400
+    file = request.files["resume"]
+    if not file.filename:
+        return jsonify({"success": False, "error": "Please select an existing resume file."}), 400
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"success": False, "error": "Please upload a .pdf, .docx, or .txt file."}), 400
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            file.save(tmp.name)
+            tmp_path = tmp.name
+        text = extract_text(tmp_path)
+        return jsonify({"success": True, "resume": _parse_resume_for_builder(text), "filename": file.filename})
+    except ScannedPDFError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except (UnsupportedFileType, ValueError) as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"Could not import this resume: {exc}"}), 500
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
 
 @app.route("/ats-resume-builder", methods=["POST"])
 def ats_resume_builder():

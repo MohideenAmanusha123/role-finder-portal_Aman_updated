@@ -434,10 +434,126 @@ function bindATSBuilderActions() {
         overlay.addEventListener("click", closeATSResumeBuilder);
     }
 
+    const importInput = document.getElementById("ats-import-resume");
+    if (importInput && !importInput.dataset.bound) {
+        importInput.dataset.bound = "true";
+        importInput.addEventListener("change", importExistingATSResume);
+    }
+
     const addSkillButton = document.getElementById("add-ats-skill");
     if (addSkillButton && !addSkillButton.dataset.bound) {
         addSkillButton.dataset.bound = "true";
         addSkillButton.addEventListener("click", addATSSkill);
+    }
+
+    async function importExistingATSResume(event) {
+        const file = event.target.files?.[0];
+        const status = document.getElementById("ats-import-status");
+        if (!file) return;
+        if (status) {
+            status.hidden = false;
+            status.textContent = "Reading your resume…";
+        }
+
+        const formData = new FormData();
+        formData.append("resume", file);
+        try {
+            const response = await fetch("/import-resume", { method: "POST", body: formData });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || "Could not import this resume.");
+            populateATSBuilder(result.resume || {});
+            if (status) status.textContent = `${result.filename || file.name} imported. Review and edit the fields before previewing.`;
+        } catch (error) {
+            if (status) status.textContent = error.message;
+        } finally {
+            event.target.value = "";
+        }
+    }
+
+    function setATSField(id, value) {
+        const field = document.getElementById(id);
+        if (field && value) field.value = value;
+    }
+
+    function populateATSBuilder(resume) {
+        const personal = resume.personal || {};
+        setATSField("ats-name", personal.name);
+        setATSField("ats-email", personal.email);
+        setATSField("ats-phone", personal.phone);
+        setATSField("ats-location", personal.location);
+        setATSField("ats-linkedin", personal.linkedin);
+        setATSField("ats-website", personal.portfolio);
+        setATSField("ats-summary", resume.summary);
+        setATSField("ats-languages", (resume.languages || []).join(", "));
+
+        const experience = document.getElementById("ats-experience-list");
+        if (experience && resume.experience?.length) {
+            experience.innerHTML = "";
+            resume.experience.forEach(() => addATSExperience());
+            [...experience.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
+                const item = resume.experience[index] || {};
+                card.querySelector(".ats-job-title").value = item.job_title || "";
+                card.querySelector(".ats-company").value = item.company || "";
+                card.querySelector(".ats-exp-location").value = item.location || "";
+                card.querySelector(".ats-start-date").value = item.start_date || "";
+                card.querySelector(".ats-end-date").value = item.end_date || "";
+                card.querySelector(".ats-exp-description").value = item.description || "";
+            });
+        }
+
+        const education = document.getElementById("ats-education-list");
+        if (education && resume.education?.length) {
+            education.innerHTML = "";
+            resume.education.forEach(() => addATSEducation());
+            [...education.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
+                const item = resume.education[index] || {};
+                card.querySelector(".ats-degree").value = item.degree || "";
+                card.querySelector(".ats-institution").value = item.institution || "";
+                card.querySelector(".ats-edu-location").value = item.location || "";
+                card.querySelector(".ats-edu-start").value = item.start_date || "";
+                card.querySelector(".ats-edu-end").value = item.end_date || "";
+                card.querySelector(".ats-grade").value = item.grade || "";
+            });
+        }
+
+        const projects = document.getElementById("ats-projects-list");
+        if (projects && resume.projects?.length) {
+            projects.innerHTML = "";
+            resume.projects.forEach(() => addATSProject());
+            [...projects.querySelectorAll(".builder-repeat-card")].forEach((card, index) => {
+                const item = resume.projects[index] || {};
+                card.querySelector(".ats-project-name").value = item.name || "";
+                card.querySelector(".ats-project-description").value = item.description || "";
+                card.querySelector(".ats-project-technologies").value = (item.technologies || []).join(", ");
+            });
+        }
+
+        const skills = document.getElementById("ats-skills-list");
+        if (skills && resume.skills?.length) {
+            skills.innerHTML = "";
+            resume.skills.forEach(() => addATSSkill());
+            [...skills.querySelectorAll(".ats-skill")].forEach((field, index) => {
+                field.value = resume.skills[index] || "";
+            });
+        }
+
+        const certifications = document.getElementById("ats-certifications-list");
+        if (certifications && resume.certifications?.length) {
+            certifications.innerHTML = "";
+            resume.certifications.forEach(() => addATSCertification());
+            [...certifications.querySelectorAll(".ats-certification")].forEach((field, index) => {
+                field.value = resume.certifications[index] || "";
+            });
+        }
+
+        const achievements = document.getElementById("ats-achievements-list");
+        if (achievements && resume.achievements?.length) {
+            achievements.innerHTML = "";
+            resume.achievements.forEach(() => addATSAchievement());
+            [...achievements.querySelectorAll(".ats-achievement")].forEach((field, index) => {
+                field.value = resume.achievements[index] || "";
+            });
+        }
     }
 
     const addExperienceButton = document.getElementById("add-ats-experience");
