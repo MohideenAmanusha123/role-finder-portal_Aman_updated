@@ -1508,10 +1508,27 @@
         id="confirm-list"
       ></div>
 
+      <div class="manual-skill-row">
+        <label for="manual-skill-input">Add a skill manually</label>
+        <div class="custom-role-row">
+          <input id="manual-skill-input" class="text-input text-input--small" type="text"
+                 maxlength="80" placeholder="e.g. Financial modelling or Canva">
+          <button id="add-manual-skill" class="reset-button" type="button">Add skill</button>
+        </div>
+        <p class="confirm-panel__note">Use “Other” for a skill that is not listed. Only add skills you can truthfully support.</p>
+      </div>
+
       <div
         id="application-list"
         class="application-list"
       ></div>
+
+      <fieldset class="summary-choice">
+        <legend>Summary</legend>
+        <label><input type="radio" name="summary-mode" value="keep"> Keep my existing summary</label>
+        <label><input type="radio" name="summary-mode" value="update" checked> Update it for this role, skills, and experience</label>
+        <label><input type="radio" name="summary-mode" value="ai"> AI-assisted summary (requires server AI configuration)</label>
+      </fieldset>
 
       <div class="generate-actions">
 

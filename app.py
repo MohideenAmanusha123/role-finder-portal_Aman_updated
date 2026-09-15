@@ -307,6 +307,9 @@ def _build_edited(data):
         data.get("matched_skills", []),
         data.get("confirmed_skills", []),
         data.get("applications", {}),
+        data.get("summary_mode", "update"),
+        data.get("role_name"),
+        data.get("experience_signal"),
     )
 
 
@@ -315,7 +318,11 @@ def preview_resume():
     data = request.get_json(silent=True) or {}
     try:
         edited = _build_edited(data)
-        return jsonify({"diff": edited["diff"], "changes": edited["changes"]})
+        return jsonify({
+            "diff": edited["diff"],
+            "changes": edited["changes"],
+            "resume": {"preamble": edited["preamble"], "sections": edited["sections"]},
+        })
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
