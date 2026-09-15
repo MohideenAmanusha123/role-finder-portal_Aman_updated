@@ -2094,6 +2094,37 @@ main {
   border-bottom: 1px solid var(--hairline);
 }
 
+.builder-import-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px;
+  margin-bottom: 28px;
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 8px;
+  background: rgba(212, 175, 55, 0.06);
+}
+
+.builder-import-panel strong {
+  color: var(--ink);
+}
+
+.builder-import-panel .builder-help {
+  margin: 4px 0 0;
+}
+
+.builder-import-button {
+  white-space: nowrap;
+}
+
+.builder-import-status {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--stamp);
+  font: 11px var(--mono);
+}
+
 .builder-section h3 {
   font-family: var(--serif);
 
