@@ -407,6 +407,7 @@ let atsProjectCount = 0;
 let atsSkillCount = 0;
 let atsCertificationCount = 0;
 let atsAchievementCount = 0;
+let atsPreviewSignature = null;
 
 function bindATSBuilderActions() {
     const openButton = document.getElementById("open-ats-builder");
@@ -469,6 +470,28 @@ function bindATSBuilderActions() {
         addAchievementButton.addEventListener("click", addATSAchievement);
     }
 
+    const autoSummaryButton = document.getElementById("auto-generate-summary");
+    if (autoSummaryButton && !autoSummaryButton.dataset.bound) {
+        autoSummaryButton.dataset.bound = "true";
+        autoSummaryButton.addEventListener("click", () => {
+            const summaryField = document.getElementById("ats-summary");
+            if (!summaryField) return;
+            summaryField.value = generateATSProfessionalSummary(collectATSResumeData());
+            summaryField.focus();
+        });
+    }
+
+    const autoJobButton = document.getElementById("auto-generate-target-job");
+    if (autoJobButton && !autoJobButton.dataset.bound) {
+        autoJobButton.dataset.bound = "true";
+        autoJobButton.addEventListener("click", () => {
+            const jobField = document.getElementById("ats-job-description");
+            if (!jobField) return;
+            jobField.value = generateATSTargetJobDescription(collectATSResumeData());
+            jobField.focus();
+        });
+    }
+
     const previewBtn = document.getElementById("preview-ats-resume");
     if (previewBtn && !previewBtn.dataset.bound) {
         previewBtn.dataset.bound = "true";
@@ -486,6 +509,75 @@ function bindATSBuilderActions() {
         docxButton.dataset.bound = "true";
         docxButton.addEventListener("click", () => downloadATSResume("docx"));
     }
+}
+
+function dedupeList(values) {
+    return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function inferATSRole(skills) {
+    const normalized = skills.join(" ").toLowerCase();
+
+    const roleMap = [
+        { pattern: /(python|java|javascript|react|node|sql|api|software|aws|azure|docker|kubernetes)/, title: "Software Engineer" },
+        { pattern: /(power bi|powerbi|excel|tableau|data analysis|analytics|sql|dashboard|reporting)/, title: "Data Analyst" },
+        { pattern: /(finance|accounting|bookkeeping|reconciliation|audit|tax|budget|financial)/, title: "Finance Professional" },
+        { pattern: /(sales|marketing|crm|business development|customer acquisition|lead generation|branding)/, title: "Sales and Marketing Professional" },
+        { pattern: /(hr|human resources|recruitment|talent|employee relations|onboarding)/, title: "HR Professional" },
+        { pattern: /(project management|jira|agile|stakeholder|planning|operations|process improvement)/, title: "Project or Operations Professional" },
+        { pattern: /(customer service|support|help desk|troubleshooting|service desk|client support)/, title: "Customer Support Professional" },
+    ];
+
+    for (const entry of roleMap) {
+        if (entry.pattern.test(normalized)) return entry.title;
+    }
+
+    return "Professional";
+}
+
+function generateATSProfessionalSummary(resume) {
+    const personal = resume?.personal || {};
+    const skills = dedupeList([...(resume?.skills || []), ...(resume?.projects || []).flatMap((project) => project.technologies || []), ...(resume?.achievements || [])]);
+    const firstEducation = (resume?.education || [])[0] || {};
+    const experienceEntries = resume?.experience || [];
+    const topSkills = skills.slice(0, 8).join(", ");
+    const roleTitle = inferATSRole(skills);
+    const educationText = firstEducation.degree || firstEducation.institution ?
+        `Academic background includes ${[firstEducation.degree, firstEducation.institution].filter(Boolean).join(" from ")}.` :
+        "";
+    const experienceText = experienceEntries.length ?
+        `Experience includes work across ${experienceEntries.map((entry) => entry.job_title || "core business operations").filter(Boolean).slice(0, 2).join(" and ")}.` :
+        "";
+
+    const summaryParts = [
+        `Results-driven ${roleTitle} with strong experience in ${topSkills || "core business functions"}.`,
+        `Skilled in delivering practical solutions, improving processes, and supporting organizational goals through effective communication, problem-solving, and collaboration.`,
+    ];
+
+    if (educationText) summaryParts.push(educationText);
+    if (experienceText) summaryParts.push(experienceText);
+
+    return summaryParts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function generateATSTargetJobDescription(resume) {
+    const skills = dedupeList(resume?.skills || []);
+    const roleTitle = inferATSRole(skills);
+    const topSkills = skills.slice(0, 7).join(", ");
+    const responsibilities = [
+        "support day-to-day operations and ensure high-quality execution",
+        "improve workflows, documentation, and process efficiency",
+        "collaborate with stakeholders to deliver business-focused outcomes",
+        "identify and resolve issues using analytical and technical problem-solving skills",
+    ];
+
+    const coreText = topSkills ? `with expertise in ${topSkills}` : "with a strong focus on operational excellence";
+
+    return [
+        `Seeking a ${roleTitle} opportunity to contribute ${coreText}.`,
+        `The ideal candidate will be responsible for ${responsibilities[0]}, ${responsibilities[1]}, and ${responsibilities[2]}.`,
+        `This role requires strong communication, attention to detail, and the ability to apply technical and business knowledge effectively to support team goals and improve performance.`,
+    ].join(" ").replace(/\s+/g, " ").trim();
 }
 
 /* ---------------------------------------------------------
@@ -515,6 +607,19 @@ function closeATSResumeBuilder() {
 
     const errorBox = document.getElementById("ats-builder-error");
     if (errorBox) { errorBox.hidden = true; errorBox.textContent = ""; }
+    atsPreviewSignature = null;
+    setATSDownloadState(false);
+}
+
+function atsResumeSignature(resume) {
+    return JSON.stringify(resume);
+}
+
+function setATSDownloadState(enabled) {
+    ["download-ats-pdf", "download-ats-docx"].forEach((id) => {
+        const button = document.getElementById(id);
+        if (button) button.disabled = !enabled;
+    });
 }
 
 /* ---------------------------------------------------------
@@ -524,6 +629,8 @@ function closeATSResumeBuilder() {
 --------------------------------------------------------- */
 
 function initializeATSBuilder() {
+    atsPreviewSignature = null;
+    setATSDownloadState(false);
     const skills = document.getElementById("ats-skills-list");
     if (skills) { skills.innerHTML = ""; addATSSkill(); addATSSkill(); addATSSkill(); }
 
@@ -826,6 +933,8 @@ async function previewATSResume() {
             alert(result.error || "Could not generate preview.");
             return;
         }
+        atsPreviewSignature = atsResumeSignature(resume);
+        setATSDownloadState(true);
         displayATSResult(result);
     } catch (error) {
         console.error(error);
@@ -864,7 +973,10 @@ function displayATSResult(result) {
     }
 
     const previewContent = document.getElementById("atsResumePreviewContent");
-    if (previewContent) previewContent.textContent = result.resume_text || "";
+    if (previewContent) {
+        previewContent.textContent = result.resume_text || "No resume content could be previewed.";
+        previewContent.parentElement?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
 }
 
 /* ---------------------------------------------------------
@@ -875,6 +987,10 @@ async function downloadATSResume(format) {
     const resume = collectATSResumeData();
     if (!resume.personal.name) {
         alert("Please enter your full name.");
+        return;
+    }
+    if (atsPreviewSignature !== atsResumeSignature(resume)) {
+        alert("Preview the resume again before downloading so you can review the latest changes.");
         return;
     }
 

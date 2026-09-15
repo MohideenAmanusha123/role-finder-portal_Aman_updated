@@ -81,67 +81,109 @@ def _section_text(sections, header):
     return ""
 
 
+def _skill_tokens(lines):
+    tokens = set()
+    for line in lines:
+        cleaned = BULLET_RE.sub("", line).strip()
+        for token in re.split(r"[,;|]", cleaned):
+            normalized = re.sub(r"\s+", " ", token.strip()).lower()
+            if normalized:
+                tokens.add(normalized)
+    return tokens
+
+
 def rewrite_summary(original_summary: str, skills, applications, role_name=None, experience_signal=None) -> str:
-    """Rewrite without claiming unverified experience or inventing projects."""
+    """Create polished, factual summary text without inventing experience."""
     labels = [format_skill_label(s) for s in skills]
     apps = [a for vals in (applications or {}).values() for a in vals if a]
     apps = list(dict.fromkeys(apps))
     if original_summary.strip():
         base = re.sub(r"\s+", " ", original_summary).strip()
-        role_text = f" for {role_name}" if role_name else ""
-        addition = f" Targeted{role_text} with core skills including {', '.join(labels)}." if labels else ""
+        if base[-1:] not in ".!?":
+            base += "."
+        addition = f" Core strengths include {', '.join(labels)}." if labels else ""
+        if role_name:
+            addition = f" Aligned with {role_name} opportunities." + addition
         if apps:
-            addition += f" Confirmed applications/tools include {', '.join(apps)}."
+            addition += f" Proficient with confirmed tools including {', '.join(apps)}."
         if experience_signal:
-            addition += f" Experience level: {experience_signal}."
+            addition += f" Experience profile: {experience_signal}-level."
         return (base + addition).strip()
     if not labels:
         return ""
-    role_text = f" for {role_name}" if role_name else ""
-    text = f"Professional{role_text} with skills in {', '.join(labels)}."
+    role_text = f" pursuing {role_name} opportunities" if role_name else ""
+    text = f"Professional{role_text} with core strengths in {', '.join(labels)}."
     if apps:
-        text += f" Confirmed applications/tools include {', '.join(apps)}."
+        text += f" Proficient with confirmed tools including {', '.join(apps)}."
+    if experience_signal:
+        text += f" Brings a {experience_signal}-level experience profile."
     return text
 
 
 def generate_ai_summary(original_summary, skills, applications, role_name=None, experience_signal=None):
-    """Generate a summary through an optional OpenAI-compatible endpoint."""
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("AI summary is not configured. Set OPENAI_API_KEY before selecting AI-assisted summary.")
-    endpoint = os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
-    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    """Generate a summary with OpenAI by default, or local Ollama when selected."""
+    provider = os.environ.get("AI_PROVIDER", "openai").strip().lower()
+    if provider not in {"ollama", "openai"}:
+        raise ValueError("AI_PROVIDER must be 'ollama' or 'openai'.")
+    model = os.environ.get(
+        "OLLAMA_MODEL" if provider == "ollama" else "OPENAI_MODEL",
+        "llama3.2" if provider == "ollama" else "gpt-4o-mini",
+    )
     labels = ", ".join(format_skill_label(s) for s in skills)
     apps = ", ".join(dict.fromkeys(a for vals in (applications or {}).values() for a in vals if a))
     prompt = (
-        "Write a concise, professional resume summary in 2-4 sentences. "
+        "Write a polished, natural-sounding professional resume summary in 2-4 sentences. "
+        "Use clear business English, strong but accurate wording, and no first-person pronouns. "
+        "Preserve the factual substance of the existing summary when one is provided. "
         "Do not invent employers, achievements, metrics, certifications, or experience. "
+        "Do not mention these instructions, confirmed tools, or an AI system. Return only the summary. "
         f"Target role: {role_name or 'the target role'}. "
         f"Existing summary: {original_summary or 'None'}. "
         f"Confirmed skills: {labels or 'None'}. Confirmed tools: {apps or 'None'}. "
         f"Experience signal: {experience_signal or 'Not provided'}."
     )
-    payload = json.dumps({
-        "model": model,
-        "temperature": 0.3,
-        "messages": [
-            {"role": "system", "content": "You edit resumes conservatively and return only the summary text."},
-            {"role": "user", "content": prompt},
-        ],
-    }).encode("utf-8")
-    req = urllib_request.Request(
-        endpoint,
-        data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    if provider == "ollama":
+        endpoint = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+        payload = json.dumps({
+            "model": model,
+            "prompt": (
+                "You edit resumes conservatively. Return only the summary text, "
+                "without a heading or explanation.\n\n" + prompt
+            ),
+            "stream": False,
+            "options": {"temperature": 0.3},
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+    else:
+        api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is required when AI_PROVIDER=openai.")
+        endpoint = os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+        payload = json.dumps({
+            "model": model,
+            "temperature": 0.3,
+            "messages": [
+                {"role": "system", "content": "You edit resumes conservatively and return only the summary text."},
+                {"role": "user", "content": prompt},
+            ],
+        }).encode("utf-8")
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    req = urllib_request.Request(endpoint, data=payload, headers=headers, method="POST")
     try:
         with urllib_request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
     except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError) as exc:
-        raise ValueError(f"AI summary service could not be reached: {exc}") from exc
+        raise ValueError(
+            f"Ollama is not running at {endpoint}. Install Ollama, run "
+            f"'ollama run {model}', and try again." if provider == "ollama"
+            else f"AI summary service could not be reached: {exc}"
+        ) from exc
     try:
-        summary = result["choices"][0]["message"]["content"].strip()
+        summary = (
+            result["response"].strip()
+            if provider == "ollama"
+            else result["choices"][0]["message"]["content"].strip()
+        )
     except (KeyError, IndexError, TypeError, AttributeError) as exc:
         raise ValueError("AI summary service returned an invalid response.") from exc
     if not summary:
@@ -166,8 +208,16 @@ def build_edited_resume(
 
     skills_idx = next((i for i, (h, _) in enumerate(sections) if h == "Skills"), None)
     if skills_idx is not None:
-        sections[skills_idx] = ("Skills", [skills_line] if skills_line else sections[skills_idx][1])
-        changes.append("Updated the Skills section with matched and user-confirmed skills.")
+        existing_lines = sections[skills_idx][1]
+        existing_tokens = _skill_tokens(existing_lines)
+        new_labels = [
+            format_skill_label(skill)
+            for skill in all_skills
+            if format_skill_label(skill).lower() not in existing_tokens
+        ]
+        if new_labels:
+            sections[skills_idx] = ("Skills", existing_lines + [", ".join(new_labels)])
+            changes.append("Added matched and user-confirmed skills while preserving existing skills.")
     elif skills_line:
         insert_at = next((i for i, (h, _) in enumerate(sections) if h == "Experience"), None)
         if insert_at is None:

@@ -14,7 +14,7 @@ A Flask resume-analysis app that supports role matching, ATS scoring, pasted job
 - **Interview prep:** missing skills generate up to three likely interview questions each.
 - **Applications/tools:** common applications are mapped to skills. The user must explicitly confirm applications they have actually used.
 - **Summary choices:** users can keep the existing Summary, update it for the selected role and confirmed skills/experience, or use an optional AI-assisted summary.
-- **AI-assisted summary:** set `OPENAI_API_KEY` to enable the OpenAI-compatible summary option. `OPENAI_API_URL` and `OPENAI_MODEL` can override the endpoint and model (defaults are the OpenAI chat completions endpoint and `gpt-4o-mini`). The key stays server-side and is never sent to the browser.
+- **AI-assisted summary:** uses OpenAI by default. Set `OPENAI_API_KEY` on the server and optionally override `OPENAI_API_URL` or `OPENAI_MODEL`. Local Ollama remains available by setting `AI_PROVIDER=ollama`, `OLLAMA_MODEL`, and `OLLAMA_URL`.
 - **Broader roles:** role matching includes financial, accounting, business analysis, operations, sales/marketing, and HR roles alongside technical roles.
 - **Manual skills:** the confirmation step accepts skills typed under “Add a skill manually” for skills outside the built-in vocabulary.
 - **Output naming:** `ayman.pdf` → `ayman_improved_resume.pdf`; `ayman.docx` → `ayman_improved_resume.docx`.
@@ -36,6 +36,33 @@ python app.py
 ```
 
 Open `http://127.0.0.1:5000`.
+
+For OpenAI summary generation:
+
+1. Create an API key at https://platform.openai.com/api-keys.
+2. Set the key as an environment variable. In PowerShell:
+
+```powershell
+$env:OPENAI_API_KEY="your-api-key-here"
+```
+
+3. Start the application:
+
+```powershell
+python app.py
+```
+
+For Render, open your web service's **Environment** settings and add:
+
+```text
+AI_PROVIDER=openai
+OPENAI_API_KEY=your-api-key-here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+Save the variables and redeploy the service. Never commit the API key to GitHub.
+
+To use local Ollama instead, set `AI_PROVIDER=ollama` and follow the Ollama setup separately.
 
 For local debugging:
 
