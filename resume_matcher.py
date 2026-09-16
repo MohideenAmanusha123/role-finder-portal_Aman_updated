@@ -339,6 +339,51 @@ def _build_advanced_interview_questions(skill: str, role_name: str) -> list[str]
     ]
 
 
+def _learning_profile(skill: str) -> tuple[str, str, dict]:
+    skill_lower = skill.lower()
+    if any(marker in skill_lower for marker in ("leadership", "communication", "negotiation", "stakeholder", "teamwork")):
+        return "1-2 weeks", "Practice", {
+            "beginner": "Learn the core concepts and vocabulary.",
+            "intermediate": "Use it in a small team or stakeholder scenario.",
+            "advanced": "Lead a complex situation and measure the outcome.",
+        }
+    if any(marker in skill_lower for marker in ("excel", "sql", "python", "java", "javascript", "cloud", "aws", "azure", "power bi", "tableau")):
+        return "3-6 weeks", "Build", {
+            "beginner": "Complete the fundamentals and guided exercises.",
+            "intermediate": "Build a practical project using realistic data or workflows.",
+            "advanced": "Optimize, troubleshoot, and explain production-level decisions.",
+        }
+    return "2-4 weeks", "Apply", {
+        "beginner": "Learn the terminology, concepts, and basic workflow.",
+        "intermediate": "Complete a hands-on project with feedback.",
+        "advanced": "Handle edge cases and teach or lead the practice.",
+    }
+
+
+def build_skill_roadmap(current_skills: set, missing_skills: list, missing_required: list, missing_preferred: list, optional_skills=None) -> list:
+    required = set(missing_required)
+    preferred = set(missing_preferred)
+    priority_rank = {"Essential": 0, "Important": 1, "Optional": 2}
+    roadmap = []
+    for skill in missing_skills:
+        priority = "Essential" if skill in required else ("Important" if skill in preferred else "Optional")
+        estimated_time, action, levels = _learning_profile(skill)
+        roadmap.append({
+            "skill": skill,
+            "priority": priority,
+            "estimated_time": estimated_time,
+            "recommended_order": 0,
+            "beginner": levels["beginner"],
+            "intermediate": levels["intermediate"],
+            "advanced": levels["advanced"],
+            "action": action,
+        })
+    roadmap.sort(key=lambda item: (priority_rank[item["priority"]], item["skill"].lower()))
+    for index, item in enumerate(roadmap, start=1):
+        item["recommended_order"] = index
+    return roadmap
+
+
 def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experience=None) -> dict:
     match = compute_role_match(resume_skills, role_name, experience)
     missing = match["missing_skills"]
@@ -375,6 +420,13 @@ def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experi
         "personal_development": personal_development,
         "resume_changes": resume_changes[:6],
         "interview_questions": questions,
+        "current_skills": sorted(resume_skills),
+        "skill_roadmap": build_skill_roadmap(
+            resume_skills,
+            missing,
+            match["missing_required"],
+            match["missing_preferred"],
+        ),
     }
 
 
@@ -436,6 +488,13 @@ def analyze_text(resume_text: str, target_role: str = None, job_description: str
                 s: _build_advanced_interview_questions(s, jd_match.get("role", "target role"))
                 for s in jd_match["missing_skills"][:8]
             },
+            "current_skills": sorted(resume_skills),
+            "skill_roadmap": build_skill_roadmap(
+                resume_skills,
+                jd_match["missing_skills"],
+                jd_match["missing_required"],
+                jd_match["missing_preferred"],
+            ),
         }
     elif target_role and target_role in ROLES:
         result["target_plan"] = build_role_plan(target_role, resume_skills, ats["issues"], experience)

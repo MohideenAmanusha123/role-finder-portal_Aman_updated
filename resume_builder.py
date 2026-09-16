@@ -11,6 +11,7 @@ Important:
 """
 
 from io import BytesIO
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
@@ -549,12 +550,22 @@ def calculate_builder_ats_score(data, job_description=""):
 # PDF
 # ------------------------------------------------------------------
 
-def generate_ats_pdf(data):
+PDF_TEMPLATES = {
+    "classic": {"accent": "#2F3A45", "header": "center", "rule": "#AAB2BA"},
+    "modern-gold": {"accent": "#B88916", "header": "left", "rule": "#D4AF37"},
+    "executive-blue": {"accent": "#1F4E79", "header": "left", "rule": "#7EA6C6"},
+    "minimal-gray": {"accent": "#4B5563", "header": "left", "rule": "#CBD5E1"},
+    "professional-teal": {"accent": "#0F766E", "header": "center", "rule": "#5BAAA3"},
+}
+
+
+def generate_ats_pdf(data, template="classic"):
     """
     Generate an ATS-friendly PDF.
     """
 
     data = normalize_resume_data(data)
+    template_config = PDF_TEMPLATES.get(template, PDF_TEMPLATES["classic"])
 
     output = BytesIO()
 
@@ -577,7 +588,7 @@ def generate_ats_pdf(data):
         fontName="Helvetica-Bold",
         fontSize=17,
         leading=19,
-        alignment=TA_CENTER,
+        alignment=TA_CENTER if template_config["header"] == "center" else 0,
         spaceAfter=2,
     )
 
@@ -587,7 +598,7 @@ def generate_ats_pdf(data):
         fontName="Helvetica",
         fontSize=9.5,
         leading=11,
-        alignment=TA_CENTER,
+        alignment=TA_CENTER if template_config["header"] == "center" else 0,
         spaceAfter=3,
     )
 
@@ -597,7 +608,7 @@ def generate_ats_pdf(data):
         fontName="Helvetica",
         fontSize=8,
         leading=9.5,
-        alignment=TA_CENTER,
+        alignment=TA_CENTER if template_config["header"] == "center" else 0,
         spaceAfter=4,
     )
 
@@ -605,6 +616,7 @@ def generate_ats_pdf(data):
         "ResumeSection",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
+        textColor=colors.HexColor(template_config["accent"]),
         fontSize=10,
         leading=11,
         spaceBefore=5,
@@ -681,7 +693,8 @@ def generate_ats_pdf(data):
         story.append(
             HRFlowable(
                 width="100%",
-                thickness=0.6,
+                thickness=0.8,
+                color=colors.HexColor(template_config["rule"]),
                 spaceBefore=0,
                 spaceAfter=3,
             )

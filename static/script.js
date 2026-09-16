@@ -177,6 +177,40 @@ function renderResumeChanges(changes) {
   return `<div class="plan-section"><p class="plan-section__title">RESUME CHANGES TO MAKE</p>${(changes || []).map(c =>
     `<div class="plan-item"><span class="plan-item__bullet">→</span><span class="plan-item__tip">${esc(c)}</span></div>`).join("")}</div>`;
 }
+function renderSkillRoadmap(plan) {
+  const current = plan.current_skills || plan.matched_skills || [];
+  const roadmap = plan.skill_roadmap || [];
+  const priorityHelp = `<div class="skill-roadmap__legend">
+    <span class="skill-roadmap__legend-item essential">Essential</span>
+    <span class="skill-roadmap__legend-item important">Important</span>
+    <span class="skill-roadmap__legend-item optional">Optional</span>
+  </div>`;
+  const currentHtml = current.length
+    ? current.map(skill => `<span class="skill-tag matched">${esc(skill)}</span>`).join("")
+    : `<span class="plan-empty">No recognized skills were detected yet.</span>`;
+  const roadmapHtml = roadmap.length
+    ? roadmap.map(item => `<article class="skill-roadmap__item">
+        <div class="skill-roadmap__top">
+          <span class="skill-roadmap__order">${item.recommended_order}</span>
+          <strong>${esc(item.skill)}</strong>
+          <span class="skill-roadmap__priority ${item.priority.toLowerCase()}">${esc(item.priority)}</span>
+          <span class="skill-roadmap__time">${esc(item.estimated_time)}</span>
+        </div>
+        <p class="skill-roadmap__action">Recommended order: ${item.recommended_order} · ${esc(item.action)} first</p>
+        <div class="skill-roadmap__levels">
+          <div><b>Beginner</b><span>${esc(item.beginner)}</span></div>
+          <div><b>Intermediate</b><span>${esc(item.intermediate)}</span></div>
+          <div><b>Advanced</b><span>${esc(item.advanced)}</span></div>
+        </div>
+      </article>`).join("")
+    : `<p class="plan-empty">No missing skills were identified for this target. Keep strengthening your current skills.</p>`;
+  return `<section class="skill-roadmap">
+    <div class="skill-roadmap__heading"><div><p class="plan-section__title">SKILL GAP ROADMAP</p>
+      <h3>What to learn for this role</h3></div>${priorityHelp}</div>
+    <div class="skill-roadmap__current"><p class="skill-roadmap__label">CURRENT SKILLS</p><div class="plan-panel__skills">${currentHtml}</div></div>
+    <div class="skill-roadmap__missing"><p class="skill-roadmap__label">MISSING SKILLS · PRIORITIZED LEARNING PLAN</p>${roadmapHtml}</div>
+  </section>`;
+}
 function renderTargetPlan(plan) {
   planPanel.hidden = false; focusPanel.hidden = true; rolesHeading.textContent = "Other roles worth a look";
   const req = new Set(plan.matched_required || []), pref = new Set(plan.matched_preferred || []);
@@ -184,6 +218,7 @@ function renderTargetPlan(plan) {
     <p class="plan-panel__score">${plan.score}% fit · Required skills carry ${plan.skill_weights?.required || 100}% of the role score</p>
     <div class="plan-panel__skills">${plan.matched_skills.map(s => `<span class="skill-tag matched">${esc(s)}${req.has(s) ? " · R" : pref.has(s) ? " · P" : ""}</span>`).join("")}
       ${plan.missing_skills.map(s => `<span class="skill-tag missing">${esc(s)}${(plan.missing_required || []).includes(s) ? " · R" : " · P"}</span>`).join("")}</div>
+    ${renderSkillRoadmap(plan)}
     ${renderPlanSection("SKILLS TO DEVELOP", plan.skill_development, "No technical gaps — your skills already line up.")}
     ${renderPlanSection("PERSONAL DEVELOPMENT", plan.personal_development, "No behavioral gaps found for this role.")}
     ${renderResumeChanges(plan.resume_changes)}`;
@@ -820,7 +855,10 @@ function closeATSResumeBuilder() {
 }
 
 function atsResumeSignature(resume) {
-    return JSON.stringify(resume);
+    return JSON.stringify({
+        resume,
+        template: document.getElementById("ats-pdf-template")?.value || "classic",
+    });
 }
 
 function setATSDownloadState(enabled) {
@@ -1139,12 +1177,13 @@ async function previewATSResume() {
     }
 
     const jobDescription = document.getElementById("ats-job-description")?.value.trim() || "";
+    const template = document.getElementById("ats-pdf-template")?.value || "classic";
 
     try {
         const response = await fetch("/preview-ats-resume", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resume, job_description: jobDescription }),
+            body: JSON.stringify({ resume, job_description: jobDescription, template }),
         });
         const result = await response.json();
         if (!result.success) {
@@ -1192,8 +1231,14 @@ function displayATSResult(result) {
 
     const previewContent = document.getElementById("atsResumePreviewContent");
     if (previewContent) {
+        const template = document.getElementById("ats-pdf-template")?.value || "classic";
+        previewContent.className = `ats-resume-preview-content resume-paper resume-paper--${template}`;
         previewContent.textContent = result.resume_text || "No resume content could be previewed.";
         previewContent.parentElement?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    const previewLabel = document.getElementById("atsPreviewTemplateLabel");
+    if (previewLabel) {
+        previewLabel.textContent = `Selected PDF template: ${document.getElementById("ats-pdf-template")?.selectedOptions[0]?.text || "Classic ATS"}`;
     }
 }
 
@@ -1213,10 +1258,11 @@ async function downloadATSResume(format) {
     }
 
     try {
+        const template = document.getElementById("ats-pdf-template")?.value || "classic";
         const response = await fetch("/download-ats-resume", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resume, format }),
+            body: JSON.stringify({ resume, format, template }),
         });
 
         if (!response.ok) {
