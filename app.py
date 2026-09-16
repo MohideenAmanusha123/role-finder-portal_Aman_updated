@@ -84,7 +84,7 @@ def _parse_experience_entries(lines):
             return []
         parts = [
             part.strip()
-            for part in re.split(r"\s*\|\s*|\s+at\s+|\s+@\s+", value, flags=re.I)
+            for part in re.split(r"\s*\|\s*|\s+[—–]\s+|\s+at\s+|\s+@\s+", value, flags=re.I)
             if part.strip()
         ]
         return parts[-2:]
@@ -192,6 +192,20 @@ def _parse_resume_for_builder(text):
     certifications = sections.get("certifications", [])
     achievements = sections.get("achievements", [])
     languages = [item.strip() for item in re.split(r"[,|;/]", " ".join(sections.get("languages", []))) if item.strip()]
+    education_text = education_lines[:]
+    education_dates = re.compile(
+        r"(?P<start>(?:[A-Za-z]{3,9}\s+)?\d{4})\s*(?:[-–—]|to)\s*"
+        r"(?P<end>(?:[A-Za-z]{3,9}\s+)?\d{4}|present|current)",
+        re.I,
+    )
+    education_start = education_end = ""
+    if education_text:
+        education_match = education_dates.search(education_text[0])
+        if education_match:
+            education_start = education_match.group("start")
+            education_end = education_match.group("end")
+            education_text[0] = education_text[0][:education_match.start()].strip(" ,-–—")
+    education_text = [line for line in education_text if line]
 
     return normalize_resume_data({
         "personal": {
@@ -204,10 +218,12 @@ def _parse_resume_for_builder(text):
         "skills": skills,
         "experience": _parse_experience_entries(experience_lines),
         "education": [{
-            "degree": education_lines[0] if education_lines else "",
-            "institution": education_lines[1] if len(education_lines) > 1 else "",
-            "description": "\n".join(education_lines[2:]),
-        }] if education_lines else [],
+            "degree": education_text[0] if education_text else "",
+            "institution": education_text[1] if len(education_text) > 1 else "",
+            "start_date": education_start,
+            "end_date": education_end,
+            "description": "\n".join(education_text[2:]),
+        }] if education_text else [],
         "projects": [{
             "name": project_lines[0] if project_lines else "",
             "description": "\n".join(project_lines[1:]),

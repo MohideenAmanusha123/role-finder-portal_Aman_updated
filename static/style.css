@@ -135,25 +135,17 @@ main {
 
 .intake__headline {
   font-family: var(--serif);
-  font-weight: 500;
+  font-weight: 600;
 
-  font-size: clamp(32px, 4.4vw, 48px);
-  line-height: 1.12;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.08;
 
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 
   margin: 0 0 16px;
   max-width: 14ch;
 
-  background: linear-gradient(
-    180deg,
-    #F7F1E0 0%,
-    #C9A94D 100%
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ink);
 }
 
 .intake__sub {
@@ -2258,6 +2250,30 @@ main {
   margin-top: 10px;
 }
 
+.language-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 5px;
+  background: var(--paper);
+}
+
+.language-picker label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.language-picker input {
+  width: auto;
+  accent-color: var(--amber);
+}
+
 .selected-language {
   display: inline-flex;
   align-items: center;
@@ -2283,6 +2299,12 @@ main {
 .custom-language-row input {
   flex: 1;
   min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .language-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .builder-section-heading {

@@ -472,17 +472,17 @@ function bindATSBuilderActions() {
         const list = document.getElementById("ats-selected-languages");
         if (!languageField || !list) return;
         list.innerHTML = "";
-        [...languageField.selectedOptions].forEach((option) => {
+        [...languageField.querySelectorAll("input[type='checkbox']:checked")].forEach((input) => {
             const tag = document.createElement("span");
             tag.className = "selected-language";
-            tag.textContent = option.value;
+            tag.textContent = input.value;
             const remove = document.createElement("button");
             remove.type = "button";
             remove.className = "selected-language__remove";
-            remove.setAttribute("aria-label", `Remove ${option.value}`);
+            remove.setAttribute("aria-label", `Remove ${input.value}`);
             remove.textContent = "×";
             remove.addEventListener("click", () => {
-                option.selected = false;
+                input.checked = false;
                 renderSelectedLanguages();
             });
             tag.appendChild(remove);
@@ -490,16 +490,32 @@ function bindATSBuilderActions() {
         });
     }
 
-    function addCustomATSLanguage() {
-        const input = document.getElementById("ats-custom-language");
+    function addLanguageOption(value) {
         const languageField = document.getElementById("ats-languages");
-        if (!input || !languageField) return;
-        const value = input.value.trim();
+        if (!languageField || !value) return null;
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = value;
+        label.append(input, ` ${value}`);
+        languageField.appendChild(label);
+        input.addEventListener("change", renderSelectedLanguages);
+        return input;
+    }
+
+    function addCustomATSLanguage() {
+        const textInput = document.getElementById("ats-custom-language");
+        const languageField = document.getElementById("ats-languages");
+        if (!textInput || !languageField) return;
+        const value = textInput.value.trim();
         if (!value) return;
-        const existing = [...languageField.options].find((option) => option.value.toLowerCase() === value.toLowerCase());
-        const option = existing || languageField.add(new Option(value, value));
-        option.selected = true;
-        input.value = "";
+        let checkbox = [...languageField.querySelectorAll("input[type='checkbox']")]
+            .find((candidate) => candidate.value.toLowerCase() === value.toLowerCase());
+        if (!checkbox) {
+            checkbox = addLanguageOption(value);
+        }
+        checkbox.checked = true;
+        textInput.value = "";
         renderSelectedLanguages();
     }
 
@@ -544,15 +560,14 @@ function bindATSBuilderActions() {
         const languageField = document.getElementById("ats-languages");
         if (languageField) {
             const importedLanguages = resume.languages || [];
-            const knownLanguages = new Set([...languageField.options].map((option) => option.value.toLowerCase()));
+            const selectedLanguages = new Set(importedLanguages.map((language) => language.toLowerCase()));
             importedLanguages.forEach((language) => {
-                if (language && !knownLanguages.has(language.toLowerCase())) {
-                    languageField.add(new Option(language, language));
+                if (language && ![...languageField.querySelectorAll("input")].some((input) => input.value.toLowerCase() === language.toLowerCase())) {
+                    addLanguageOption(language);
                 }
             });
-            const selectedLanguages = new Set(importedLanguages.map((language) => language.toLowerCase()));
-            [...languageField.options].forEach((option) => {
-                option.selected = selectedLanguages.has(option.value.toLowerCase());
+            [...languageField.querySelectorAll("input[type='checkbox']")].forEach((input) => {
+                input.checked = selectedLanguages.has(input.value.toLowerCase());
             });
             renderSelectedLanguages();
         }
@@ -826,7 +841,7 @@ function initializeATSBuilder() {
     setATSDownloadState(false);
     const languageField = document.getElementById("ats-languages");
     if (languageField) {
-        [...languageField.options].forEach((option) => { option.selected = false; });
+        [...languageField.querySelectorAll("input[type='checkbox']")].forEach((input) => { input.checked = false; });
     }
     const selectedLanguages = document.getElementById("ats-selected-languages");
     if (selectedLanguages) selectedLanguages.innerHTML = "";
@@ -1088,7 +1103,7 @@ function collectATSResumeData() {
     const languageField = document.getElementById("ats-languages");
     const languages = languageField?.multiple
         ? [...languageField.selectedOptions].map(option => option.value.trim()).filter(Boolean)
-        : getValue("ats-languages").split(",").map(v => v.trim()).filter(Boolean);
+        : [...(languageField?.querySelectorAll("input[type='checkbox']:checked") || [])].map(input => input.value.trim()).filter(Boolean);
 
     return {
         personal: {

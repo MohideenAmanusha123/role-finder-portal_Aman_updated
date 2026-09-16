@@ -1220,27 +1220,20 @@
               Languages (select all that apply)
             </label>
 
-            <select
-              id="ats-languages"
-              name="languages"
-              multiple
-              size="6"
-              aria-describedby="ats-languages-help"
-            >
-              <option>English</option>
-              <option>Spanish</option>
-              <option>French</option>
-              <option>German</option>
-              <option>Hindi</option>
-              <option>Tamil</option>
-              <option>Telugu</option>
-              <option>Malayalam</option>
-              <option>Kannada</option>
-              <option>Arabic</option>
-              <option>Mandarin</option>
-              <option>Japanese</option>
-              <option>Other</option>
-            </select>
+            <div id="ats-languages" class="language-picker" aria-describedby="ats-languages-help">
+              <label><input type="checkbox" value="English"> English</label>
+              <label><input type="checkbox" value="Spanish"> Spanish</label>
+              <label><input type="checkbox" value="French"> French</label>
+              <label><input type="checkbox" value="German"> German</label>
+              <label><input type="checkbox" value="Hindi"> Hindi</label>
+              <label><input type="checkbox" value="Tamil"> Tamil</label>
+              <label><input type="checkbox" value="Telugu"> Telugu</label>
+              <label><input type="checkbox" value="Malayalam"> Malayalam</label>
+              <label><input type="checkbox" value="Kannada"> Kannada</label>
+              <label><input type="checkbox" value="Arabic"> Arabic</label>
+              <label><input type="checkbox" value="Mandarin"> Mandarin</label>
+              <label><input type="checkbox" value="Japanese"> Japanese</label>
+            </div>
             <div id="ats-selected-languages" class="selected-language-list" aria-live="polite"></div>
             <div class="custom-language-row">
               <label class="visually-hidden" for="ats-custom-language">Add another language</label>
