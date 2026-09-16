@@ -373,9 +373,8 @@ def download_ats_resume():
 
         if output_format == "pdf":
 
-            file_stream = generate_ats_pdf(
-                resume_data
-            )
+            template = data.get("template", "classic")
+            file_stream = generate_ats_pdf(resume_data, template=template)
 
             return send_file(
                 file_stream,

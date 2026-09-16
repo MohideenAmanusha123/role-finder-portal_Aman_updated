@@ -1263,6 +1263,18 @@
 
         <div class="ats-builder-actions">
 
+          <div class="pdf-template-picker">
+            <label for="ats-pdf-template">PDF template</label>
+            <select id="ats-pdf-template" name="pdf_template">
+              <option value="classic">Classic ATS</option>
+              <option value="modern-gold">Modern Gold</option>
+              <option value="executive-blue">Executive Blue</option>
+              <option value="minimal-gray">Minimal Gray</option>
+              <option value="professional-teal">Professional Teal</option>
+            </select>
+            <p>Choose a template, preview it, then download your PDF.</p>
+          </div>
+
           <button
   type="button"
   id="cancel-ats-builder"
@@ -1309,6 +1321,8 @@
         class="ats-builder-result"
         hidden
       >
+
+        <p id="atsPreviewTemplateLabel" class="ats-preview-template-label"></p>
 
         <div class="ats-score-card">
 

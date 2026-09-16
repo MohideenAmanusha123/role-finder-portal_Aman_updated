@@ -1762,6 +1762,57 @@ main {
   font-family: Georgia, "Times New Roman", serif;
 }
 
+.resume-paper--classic {
+  border-top: 5px solid #20201c;
+}
+
+.resume-paper--modern-gold {
+  border: 2px solid #d4af37;
+  border-top: 9px solid #d4af37;
+  box-shadow: 0 10px 28px rgba(212, 175, 55, 0.22);
+}
+
+.resume-paper--modern-gold,
+.resume-paper--modern-gold .resume-paper__name {
+  color: #242018;
+}
+
+.resume-paper--executive-blue {
+  border-top: 9px solid #1d4f91;
+  box-shadow: 0 10px 28px rgba(29, 79, 145, 0.2);
+}
+
+.resume-paper--minimal-gray {
+  border-color: #b7b7b7;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.1);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.resume-paper--professional-teal {
+  border-left: 8px solid #168b8b;
+  box-shadow: 0 10px 28px rgba(22, 139, 139, 0.2);
+}
+
+.resume-paper--modern-gold .resume-paper__section h4 {
+  border-bottom-color: #d4af37;
+  color: #9a7615;
+}
+
+.resume-paper--executive-blue .resume-paper__section h4 {
+  border-bottom-color: #9bb6d8;
+  color: #1d4f91;
+}
+
+.resume-paper--minimal-gray .resume-paper__section h4 {
+  border-bottom-color: #b7b7b7;
+  color: #555;
+}
+
+.resume-paper--professional-teal .resume-paper__section h4 {
+  border-bottom-color: #8bcaca;
+  color: #147373;
+}
+
 .resume-paper__name {
   font-size: 24px;
   font-weight: 700;
@@ -2085,6 +2136,59 @@ main {
   padding-bottom: 22px;
 
   border-bottom: 1px solid var(--hairline);
+}
+
+.pdf-template-picker {
+  flex-basis: 100%;
+  padding: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.42);
+  border-radius: 6px;
+  background: #0a0a0b;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+}
+
+.pdf-template-picker label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--amber);
+  font: 11px var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pdf-template-picker select {
+  min-width: 230px;
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+  background-color: #111112;
+  color: var(--amber);
+  font-weight: 600;
+  color-scheme: dark;
+}
+
+.pdf-template-picker select:hover,
+.pdf-template-picker select:focus {
+  border-color: #f0cf55;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.16);
+  outline: none;
+}
+
+.pdf-template-picker select option {
+  background: #0a0a0b;
+  color: var(--amber);
+}
+
+.pdf-template-picker select option:checked {
+  background: var(--amber);
+  color: #0a0a0b;
+}
+
+.pdf-template-picker p,
+.ats-preview-template-label {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .builder-import-panel {
@@ -2670,6 +2774,142 @@ main {
   margin-bottom: 0;
 }
 
+.skill-roadmap {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 8px;
+  background: var(--paper-raised);
+}
+
+.skill-roadmap__heading,
+.skill-roadmap__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-roadmap__heading {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.skill-roadmap__heading h3 {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font: 600 18px var(--serif);
+}
+
+.skill-roadmap__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-roadmap__legend-item,
+.skill-roadmap__priority {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skill-roadmap__legend-item.essential,
+.skill-roadmap__priority.essential {
+  color: #f2b8a8;
+  background: rgba(226, 114, 91, 0.14);
+}
+
+.skill-roadmap__legend-item.important,
+.skill-roadmap__priority.important {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.skill-roadmap__legend-item.optional,
+.skill-roadmap__priority.optional {
+  color: var(--stamp);
+  background: var(--stamp-soft);
+}
+
+.skill-roadmap__label {
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+  font: 10px var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.skill-roadmap__current {
+  margin-bottom: 20px;
+}
+
+.skill-roadmap__missing {
+  display: grid;
+  gap: 10px;
+}
+
+.skill-roadmap__item {
+  padding: 13px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.skill-roadmap__top strong {
+  flex: 1;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.skill-roadmap__order {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  color: var(--amber);
+  font: 11px var(--mono);
+}
+
+.skill-roadmap__time {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.skill-roadmap__action {
+  margin: 8px 0 10px 34px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.skill-roadmap__levels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-left: 34px;
+}
+
+.skill-roadmap__levels div {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-left: 2px solid var(--hairline-strong);
+}
+
+.skill-roadmap__levels b {
+  color: var(--amber);
+  font: 10px var(--mono);
+  text-transform: uppercase;
+}
+
+.skill-roadmap__levels span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 
 /* =========================================================
    ATS RESUME PREVIEW
@@ -2777,6 +3017,20 @@ main {
 ========================================================= */
 
 @media (max-width: 560px) {
+
+  .skill-roadmap__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .skill-roadmap__levels {
+    grid-template-columns: 1fr;
+    margin-left: 0;
+  }
+
+  .skill-roadmap__action {
+    margin-left: 0;
+  }
 
   main {
     padding: 32px 20px 72px;
