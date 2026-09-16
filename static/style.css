@@ -138,14 +138,15 @@ main {
   font-weight: 600;
 
   font-size: clamp(30px, 4vw, 44px);
-  line-height: 1.08;
+  line-height: 1.12;
 
   letter-spacing: -0.02em;
 
   margin: 0 0 16px;
   max-width: 14ch;
 
-  color: var(--ink);
+  color: var(--amber);
+  text-shadow: 0 1px 0 rgba(255, 245, 200, 0.08);
 }
 
 .intake__sub {
