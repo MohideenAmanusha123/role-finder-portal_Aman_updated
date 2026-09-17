@@ -221,11 +221,13 @@ def compute_role_match(resume_skills: set, role_name: str, experience=None) -> d
     }
 
 
-def match_roles(resume_text: str, top_n: int = 6) -> tuple:
+def match_roles(resume_text: str, top_n: int = None) -> tuple:
     resume_skills = find_skills(resume_text, SKILL_VOCABULARY)
     experience = detect_experience_signal(resume_text)
     results = [compute_role_match(resume_skills, role_name, experience) for role_name in ROLES]
     results.sort(key=lambda r: r["score"], reverse=True)
+    if top_n is None:
+        return results, sorted(resume_skills)
     return results[:top_n], sorted(resume_skills)
 
 
@@ -327,6 +329,13 @@ def _build_advanced_interview_questions(skill: str, role_name: str) -> list[str]
             f"Describe a situation where you had to apply {skill} without authority and how you handled it.",
             f"What is your approach to improving {skill} in a fast-moving {role_name} environment?",
             f"Give an example of a trade-off you made when balancing {skill} with speed, quality, or stakeholder demands.",
+            f"Describe a project where effective {skill} changed the outcome for the team or customer.",
+            f"When {skill} was difficult with a stakeholder, how did you adapt your communication and keep momentum?",
+            f"How do you decide when to escalate an issue that requires more {skill} than a single team member can provide?",
+            f"What do you do when a team member disagrees with your approach to {skill} and you still need alignment?",
+            f"How have you coached or supported someone else to improve their {skill} in practice?",
+            f"What metrics or signals tell you that your {skill} is adding value in a role like {role_name}?",
+            f"Tell me about a time you had to balance empathy, urgency, and clarity while applying {skill}.",
         ]
 
     return [
@@ -336,6 +345,12 @@ def _build_advanced_interview_questions(skill: str, role_name: str) -> list[str]
         f"How do you validate the quality and reliability of your work with {skill} before presenting it to stakeholders?",
         f"Describe a time when requirements changed while you were working with {skill}. How did you adapt and communicate the impact?",
         f"How would you explain the value of {skill} to a non-technical stakeholder in a {role_name} role?",
+        f"What would you do if the dataset or system conditions around {skill} changed unexpectedly mid-project?",
+        f"Give an example where you improved efficiency or accuracy by using {skill} differently than the original process.",
+        f"How do you document and maintain quality when working with {skill} across multiple stakeholders or environments?",
+        f"Tell me about a time you had to troubleshoot or recover from a mistake involving {skill}.",
+        f"Which metrics or outcomes do you use to show that {skill} is actually improving business or operational performance?",
+        f"If you had to onboard a new teammate to your workflow around {skill}, how would you structure the training?",
     ]
 
 

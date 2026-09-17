@@ -34,7 +34,7 @@ from roles_data import (
     add_custom_role,
 )
 
-from pdf_report import build_pdf_report
+from pdf_report import build_pdf_report, build_interview_question_pdf
 
 from resume_editor import (
     build_edited_resume,
@@ -505,6 +505,24 @@ def download_report():
     safe_name = safe_base(data.get("filename", "resume"))
     return send_file(pdf_buffer, mimetype="application/pdf", as_attachment=True,
                      download_name=f"role_finder_report_{safe_name}.pdf")
+
+
+@app.route("/download-interview-questions", methods=["POST"])
+def download_interview_questions():
+    data = request.get_json(silent=True) or {}
+    if not data:
+        return jsonify({"error": "No interview data was provided."}), 400
+    try:
+        pdf_buffer = build_interview_question_pdf(data)
+    except Exception as e:
+        return jsonify({"error": f"Could not build the interview PDF: {e}"}), 500
+    safe_name = safe_base(data.get("filename", "resume"))
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"interview_question_pack_{safe_name}.pdf",
+    )
 
 
 def _build_edited(data):

@@ -228,3 +228,95 @@ def build_pdf_report(data: dict) -> io.BytesIO:
     doc.build(story)
     buf.seek(0)
     return buf
+
+
+def build_interview_question_pdf(data: dict) -> io.BytesIO:
+    """Build a PDF of interview questions for missing skills and selected roles."""
+    styles = _styles()
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=letter,
+        leftMargin=0.75 * inch, rightMargin=0.75 * inch,
+        topMargin=0.7 * inch, bottomMargin=0.7 * inch,
+    )
+    story = []
+
+    story.append(Paragraph("ROLE FINDER", styles["mark"]))
+    story.append(Paragraph("Interview Question Pack", styles["title"]))
+    generated = datetime.now().strftime("%d %b %Y")
+    story.append(Paragraph(f"Generated {generated}", styles["subtitle"]))
+    story.append(HRFlowable(width="100%", thickness=1, color=HAIRLINE, spaceAfter=14))
+
+    pack_mode = (data.get("question_pack") or "standard").lower()
+    limit = 24 if pack_mode == "full" else 12
+
+    target_plan = data.get("target_plan") or {}
+    comparison_roles = data.get("comparison_roles") or []
+    if target_plan and target_plan.get("interview_questions"):
+        question_sets = target_plan["interview_questions"]
+        title = f"Target role: {target_plan.get('role', 'Role')}"
+    elif comparison_roles:
+        question_sets = {}
+        for role in comparison_roles:
+            role_name = role.get("role") or "Target role"
+            missing = role.get("missing_skills") or []
+            if not missing:
+                continue
+            question_sets[role_name] = {
+                skill: [
+                    f"Tell me about a time you used {skill} in a {role_name} context.",
+                    f"How do you measure success when working with {skill} in a {role_name} environment?",
+                    f"Describe a challenge involving {skill} and how you handled it.",
+                    f"What would you do differently if the scale of {skill} changed unexpectedly in {role_name}?",
+                    f"How do you prioritize quality and speed when working with {skill}?",
+                    f"What metrics tell you your use of {skill} is improving results?",
+                    f"Describe a time when {skill} helped you navigate ambiguity or change.",
+                    f"How do you communicate the value of {skill} to non-experts in a {role_name} setting?",
+                ]
+                for skill in missing[:3]
+            }
+        title = "Comparison roles"
+    else:
+        question_sets = data.get("interview_questions") or {}
+        title = "Interview preparation"
+
+    story.append(Paragraph(title, styles["h2"]))
+
+    if not question_sets:
+        story.append(Paragraph("No interview questions were available for this analysis set yet.", styles["body"]))
+        doc.build(story)
+        buf.seek(0)
+        return buf
+
+    for section_title, skills in question_sets.items():
+        if isinstance(skills, dict):
+            if not skills:
+                continue
+            story.append(Paragraph(f"{section_title}", styles["h3"]))
+            for skill, questions in skills.items():
+                story.append(Paragraph(f"<b>{skill}</b>", styles["body"]))
+                story.append(ListFlowable(
+                    [ListItem(Paragraph(q, styles["body"]), spaceAfter=5) for q in questions[:limit]],
+                    bulletType="bullet",
+                    start="-",
+                ))
+        else:
+            story.append(Paragraph(f"{section_title}", styles["h3"]))
+            question_list = list(skills)[:limit]
+            story.append(ListFlowable(
+                [ListItem(Paragraph(q, styles["body"]), spaceAfter=5) for q in question_list],
+                bulletType="bullet",
+                start="-",
+            ))
+        story.append(Spacer(1, 12))
+
+    story.append(Spacer(1, 8))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=HAIRLINE, spaceAfter=8))
+    story.append(Paragraph(
+        "Use these questions to practice, structure your examples, and sharpen your answers before interviews.",
+        styles["body_soft"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf
