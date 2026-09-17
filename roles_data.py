@@ -125,6 +125,18 @@ ROLES = {
         "required": ["sql", "excel", "data analysis", "statistics", "data visualization"],
         "preferred": ["power bi", "tableau", "python", "pandas", "numpy", "etl", "data pipelines"],
     },
+    "HR Executive": {
+        "description": "Managing recruitment, employee support, compliance, and people operations with strong stakeholder coordination.",
+        "level": "mid",
+        "required": ["human resources", "recruiting", "communication", "stakeholder management", "compliance", "conflict resolution"],
+        "preferred": ["onboarding", "project management", "excel", "conflict resolution"],
+    },
+    "Operations Coordinator": {
+        "description": "Keeping teams, workflows, and service processes efficient, organized, and aligned with business goals.",
+        "level": "mid",
+        "required": ["operations management", "process improvement", "project management", "communication", "excel", "problem solving"],
+        "preferred": ["sla management", "procurement", "budgeting", "business analysis", "stakeholder management"],
+    },
     "QA Engineer": {
         "description": "Ensuring software quality through manual and automated testing.",
         "level": "mid",

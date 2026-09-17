@@ -29,6 +29,14 @@ const resetButton = $("reset-button");
 const downloadButton = $("download-pdf-button");
 const downloadError = $("download-error");
 const targetRoleSelect = $("target-role-select");
+const compareRole1 = $("compare-role-1");
+const compareRole2 = $("compare-role-2");
+const compareRole3 = $("compare-role-3");
+const compareRole4 = $("compare-role-4");
+const addCompareRoleButton = $("add-compare-role");
+const compareRolesButton = $("compare-roles-button");
+const roleComparisonPanel = $("role-comparison-panel");
+const roleComparisonResults = $("role-comparison-results");
 const jdInputPanel = $("jd-input-panel");
 const jobDescription = $("job-description");
 const customRoleName = $("custom-role-name");
@@ -82,6 +90,108 @@ targetRoleSelect.addEventListener("change", () => {
   if (targetRoleSelect.value) params.set("role", targetRoleSelect.value); else params.delete("role");
   history.replaceState({}, "", `${location.pathname}${params.toString() ? "?" + params : ""}`);
   if (currentFile && !results.hidden) uploadFile(currentFile);
+});
+
+function updateComparisonRoleSlots() {
+  const selects = [compareRole1, compareRole2, compareRole3, compareRole4];
+  const visibleCount = selects.filter((select) => !select.hidden).length;
+  const maxRoles = 4;
+
+  if (visibleCount >= 4) {
+    addCompareRoleButton.disabled = true;
+  } else {
+    addCompareRoleButton.disabled = false;
+  }
+
+  selects.forEach((select, index) => {
+    if (index < 2) {
+      select.hidden = false;
+      return;
+    }
+    select.hidden = index >= visibleCount;
+  });
+}
+
+function getComparedRoles() {
+  return [compareRole1.value, compareRole2.value, compareRole3.value, compareRole4.value]
+    .filter((value, index, array) => value && array.indexOf(value) === index);
+}
+
+function renderRoleComparisonPanel() {
+  const selectedRoles = getComparedRoles();
+  if (!selectedRoles.length || !lastAnalysisData || !Array.isArray(lastAnalysisData.roles)) {
+    roleComparisonResults.hidden = true;
+    roleComparisonResults.innerHTML = "";
+    return;
+  }
+
+  const matches = lastAnalysisData.roles.filter((role) => selectedRoles.includes(role.role));
+  if (!matches.length) {
+    roleComparisonResults.hidden = true;
+    return;
+  }
+
+  roleComparisonResults.hidden = false;
+  roleComparisonResults.innerHTML = `
+    <div class="comparison-table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Match score</th>
+            <th>Matched skills</th>
+            <th>Missing skills</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${matches.map((role) => `
+            <tr>
+              <td>${esc(role.role)}</td>
+              <td>${role.score}%</td>
+              <td>${(role.matched_skills || []).slice(0, 5).map((skill) => `<span class="skill-tag matched">${esc(skill)}</span>`).join("") || "None"}</td>
+              <td>${(role.missing_skills || []).slice(0, 5).map((skill) => `<span class="skill-tag missing">${esc(skill)}</span>`).join("") || "None"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+addCompareRoleButton.addEventListener("click", () => {
+  const selects = [compareRole1, compareRole2, compareRole3, compareRole4];
+  const nextHiddenIndex = selects.findIndex((select) => select.hidden);
+  if (nextHiddenIndex === -1 || nextHiddenIndex > 3) return;
+  selects[nextHiddenIndex].hidden = false;
+  updateComparisonRoleSlots();
+});
+
+compareRolesButton.addEventListener("click", () => {
+  renderRoleComparisonPanel();
+});
+
+document.querySelectorAll(".preset-role-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const preset = (button.dataset.rolePreset || "").split(",").map((value) => value.trim()).filter(Boolean);
+    const selects = [compareRole1, compareRole2, compareRole3, compareRole4];
+    selects.forEach((select) => {
+      select.hidden = true;
+      select.value = "";
+    });
+    selects.slice(0, preset.length).forEach((select, index) => {
+      select.hidden = false;
+      select.value = preset[index];
+    });
+    updateComparisonRoleSlots();
+    renderRoleComparisonPanel();
+  });
+});
+
+[compareRole1, compareRole2, compareRole3, compareRole4].forEach((select) => {
+  select.addEventListener("change", () => {
+    updateComparisonRoleSlots();
+    renderRoleComparisonPanel();
+  });
 });
 
 function handleFile(file) {
@@ -252,21 +362,81 @@ function renderApplicationChoices() {
       <input class="text-input text-input--small app-custom" data-skill="${esc(skill)}" placeholder="Other application/tool"></div>`;
   }).join("");
 }
+function collectInterviewQuestions() {
+  const targetPlan = lastAnalysisData && lastAnalysisData.target_plan ? lastAnalysisData.target_plan : null;
+  if (targetPlan && targetPlan.interview_questions) {
+    return { target_plan: targetPlan };
+  }
+
+  const comparisonRoles = getComparedRoles().map((roleName) => {
+    const match = (lastAnalysisData && lastAnalysisData.roles || []).find((item) => item.role === roleName);
+    return match ? { role: roleName, missing_skills: match.missing_skills || [] } : null;
+  }).filter(Boolean);
+
+  if (comparisonRoles.length) {
+    return { comparison_roles: comparisonRoles };
+  }
+
+  return {};
+}
+
+async function downloadInterviewPack(packName = "standard") {
+  if (!lastAnalysisData) return;
+  const payload = { filename: lastAnalysisData.filename || "resume", ...collectInterviewQuestions() };
+  payload.question_pack = packName;
+
+  try {
+    const response = await fetch("/download-interview-questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Could not generate the interview PDF.");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `interview_question_pack_${(lastAnalysisData.filename || "resume").replace(/\.[^.]+$/, "")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(err.message || "Unable to download the PDF.");
+  }
+}
+
 function renderInterviewPrep(plan) {
   const qs = plan.interview_questions || {};
   const skills = Object.keys(qs);
   if (!skills.length) { interviewPanel.hidden = true; return; }
+
   interviewPanel.hidden = false;
-  interviewPanel.innerHTML = `<p class="focus-panel__eyebrow">INTERVIEW PREP</p><h3 class="focus-panel__title">Likely questions for your skill gaps</h3>
-    ${skills.slice(0, 8).map(s => `<details><summary>${esc(s)}</summary><ol>${qs[s].map(q => `<li>${esc(q)}</li>`).join("")}</ol></details>`).join("")}`;
+  interviewPanel.innerHTML = `
+    <p class="focus-panel__eyebrow">INTERVIEW PREP</p>
+    <h3 class="focus-panel__title">Likely questions for your skill gaps</h3>
+    <div class="generate-actions interview-actions">
+      <button type="button" class="download-button" data-download-pack="standard">Download PDF set</button>
+      <button type="button" class="secondary-button" data-download-pack="full">Download full pack</button>
+    </div>
+    ${skills.slice(0, 8).map(s => `<details><summary>${esc(s)}</summary><ol>${qs[s].slice(0, 12).map(q => `<li>${esc(q)}</li>`).join("")}</ol></details>`).join("")}
+  `;
+
+  interviewPanel.querySelectorAll("[data-download-pack]").forEach((button) => {
+    button.addEventListener("click", () => downloadInterviewPack(button.dataset.downloadPack));
+  });
 }
 function renderRoleList(roles) {
   roleList.innerHTML = "";
-  if (!roles.length) {
+  const topRoles = Array.isArray(roles) ? roles.slice(0, 6) : [];
+  if (!topRoles.length) {
     roleList.innerHTML = `<li class="empty-state">No role matches were found. Try a text-based resume or paste a fuller job description.</li>`;
     return;
   }
-  roles.forEach((role, i) => {
+  topRoles.forEach((role, i) => {
     const tier = tierFor(role.score), req = new Set(role.matched_required || []);
     const li = document.createElement("li");
     li.className = `role-card ${tier.className}`; li.style.setProperty("--card-delay", `${i * 0.06}s`);
@@ -292,9 +462,12 @@ function renderDelta(data) {
 function renderResults(data) {
   loading.hidden = true; results.hidden = false; lastAnalysisData = data; pendingEditedData = null;
   resultsFilename.textContent = data.filename;
+  roleComparisonPanel.hidden = false;
+  updateComparisonRoleSlots();
   renderDelta(data); renderHealth(data.health); renderExperience(data.experience_signal); renderAts(data.ats);
   if (data.target_plan) renderTargetPlan(data.target_plan); else renderFocusSkills(data.focus_skills);
   renderRoleList(data.roles);
+  renderRoleComparisonPanel();
   requestAnimationFrame(() => document.querySelectorAll(".ring-value").forEach(c => c.style.strokeDashoffset = c.dataset.finalOffset));
 }
 
@@ -307,6 +480,12 @@ resetButton.addEventListener("click", () => {
   generateNote.hidden = true; generateNote.textContent = "";
   customRoleNote.hidden = true; customRoleNote.textContent = "";
   focusPanel.hidden = true; planPanel.hidden = true; interviewPanel.hidden = true; deltaPanel.hidden = true;
+  roleComparisonPanel.hidden = true; roleComparisonResults.hidden = true; roleComparisonResults.innerHTML = "";
+  [compareRole1, compareRole2, compareRole3, compareRole4].forEach((select) => {
+    select.hidden = true;
+    select.value = "";
+  });
+  compareRole1.hidden = false; compareRole2.hidden = false;
   if (jobDescription) jobDescription.value = "";
   if (customRoleName) customRoleName.value = "";
 });

@@ -1507,33 +1507,6 @@
     ></div>
 
 
-    <!-- SKILL LEGEND -->
-
-    <div class="legend">
-
-      <span class="legend__title">
-        SKILL LEGEND
-      </span>
-
-      <span class="skill-tag matched">
-        Matched
-      </span>
-
-      <span class="skill-tag missing">
-        Missing
-      </span>
-
-      <span class="skill-tag required">
-        Required · 70%
-      </span>
-
-      <span class="skill-tag preferred">
-        Preferred · 30%
-      </span>
-
-    </div>
-
-
     <!-- ACTION PLAN -->
 
     <div
@@ -1664,6 +1637,98 @@
       hidden
     ></div>
 
+    <!-- ROLE COMPARISON -->
+
+    <div
+      id="role-comparison-panel"
+      class="comparison-panel"
+      hidden
+      aria-label="Role comparison"
+    >
+      <label class="role-select-label" for="compare-role-1">
+        Compare roles
+      </label>
+
+      <div class="comparison-grid">
+        <select id="compare-role-1" class="role-select role-select--compact">
+          <option value="">Choose a role</option>
+          {% for r in roles %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+
+        <select id="compare-role-2" class="role-select role-select--compact">
+          <option value="">Choose a role</option>
+          {% for r in roles %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+
+        <select id="compare-role-3" class="role-select role-select--compact" hidden>
+          <option value="">Choose a role</option>
+          {% for r in roles %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+
+        <select id="compare-role-4" class="role-select role-select--compact" hidden>
+          <option value="">Choose a role</option>
+          {% for r in roles %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="comparison-actions">
+        <button type="button" id="add-compare-role" class="secondary-button">
+          Add another role
+        </button>
+        <button type="button" id="compare-roles-button" class="secondary-button">
+          Compare selected roles
+        </button>
+      </div>
+
+      <div class="comparison-presets" aria-label="Suggested role comparisons">
+        <button type="button" class="preset-role-button" data-role-preset="Technical Support Engineer,Business Analyst">
+          Support Engineer vs Business Analyst
+        </button>
+        <button type="button" class="preset-role-button" data-role-preset="Data Analyst,Financial Analyst">
+          Data Analyst vs Financial Analyst
+        </button>
+        <button type="button" class="preset-role-button" data-role-preset="HR Executive,Operations Coordinator">
+          HR Executive vs Operations Coordinator
+        </button>
+      </div>
+
+      <div id="role-comparison-results" class="comparison-results" hidden></div>
+    </div>
+
+
+    <!-- SKILL LEGEND -->
+
+    <div class="legend">
+
+      <span class="legend__title">
+        SKILL LEGEND
+      </span>
+
+      <span class="skill-tag matched">
+        Matched
+      </span>
+
+      <span class="skill-tag missing">
+        Missing
+      </span>
+
+      <span class="skill-tag required">
+        Required · 70%
+      </span>
+
+      <span class="skill-tag preferred">
+        Preferred · 30%
+      </span>
+
+    </div>
 
     <!-- ROLE LIST -->
 

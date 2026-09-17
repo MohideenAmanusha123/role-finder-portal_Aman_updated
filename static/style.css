@@ -1885,6 +1885,95 @@ main {
   font-size: 13px;
 }
 
+.comparison-panel {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--amber);
+  border-radius: 6px;
+  padding: 20px 22px;
+  margin: 0 0 24px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-select--compact {
+  max-width: none;
+  margin-bottom: 0;
+}
+
+.comparison-actions {
+  margin-top: 12px;
+}
+
+.comparison-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.preset-role-button {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.preset-role-button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.comparison-results {
+  margin-top: 18px;
+}
+
+.comparison-table-wrap {
+  overflow-x: auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.comparison-table th,
+.comparison-table td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+.comparison-table th {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.02);
+}
+
+.comparison-table td {
+  color: var(--ink);
+}
+
+.comparison-table .skill-tag {
+  display: inline-block;
+  margin: 0 4px 4px 0;
+}
+
 .empty-state {
   background: var(--paper-raised);
 
@@ -1895,6 +1984,10 @@ main {
   border-radius: 6px;
 
   color: var(--ink-soft);
+}
+
+.interview-actions {
+  margin: 0 0 14px;
 }
 
 
