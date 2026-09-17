@@ -78,36 +78,30 @@ button {
 ========================================================= */
 
 .masthead {
-  padding: 28px 32px 24px;
+  padding: 14px 32px;
   border-bottom: 1px solid var(--hairline);
 
   display: flex;
   align-items: center;
 }
 
-.masthead__mark {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-
+.masthead__brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  line-height: 0;
 }
 
-.masthead__mark::before {
-  content: "";
+.masthead__logo {
+  display: block;
+  width: min(270px, 60vw);
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+}
 
-  width: 6px;
-  height: 6px;
-
-  background: var(--amber);
-  border-radius: 1px;
-
-  transform: rotate(45deg);
-
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+.masthead__brand:focus-visible {
+  outline: 1.5px solid var(--amber);
+  outline-offset: 4px;
 }
 
 
