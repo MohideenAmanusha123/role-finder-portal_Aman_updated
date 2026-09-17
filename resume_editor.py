@@ -172,7 +172,27 @@ def generate_ai_summary(original_summary, skills, applications, role_name=None, 
     try:
         with urllib_request.urlopen(req, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
-    except (urllib_error.URLError, urllib_error.HTTPError, TimeoutError) as exc:
+    except urllib_error.HTTPError as exc:
+        if exc.code == 429:
+            retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
+            wait_hint = f" Retry after {retry_after} seconds." if retry_after.isdigit() else ""
+            if provider == "ollama":
+                message = (
+                    "The local AI service is rate-limited or busy."
+                    f"{wait_hint} Try again shortly or choose the standard summary option."
+                )
+            else:
+                message = (
+                    "The AI summary service rate limit or usage quota was reached."
+                    f"{wait_hint} Check your provider usage/billing limits, or choose the standard summary option."
+                )
+            raise ValueError(message) from exc
+        raise ValueError(
+            f"Ollama is not running at {endpoint}. Install Ollama, run "
+            f"'ollama run {model}', and try again." if provider == "ollama"
+            else f"AI summary service could not be reached: {exc}"
+        ) from exc
+    except (urllib_error.URLError, TimeoutError) as exc:
         raise ValueError(
             f"Ollama is not running at {endpoint}. Install Ollama, run "
             f"'ollama run {model}', and try again." if provider == "ollama"
