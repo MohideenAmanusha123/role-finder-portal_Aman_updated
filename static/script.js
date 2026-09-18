@@ -449,7 +449,7 @@ function renderRoleList(roles) {
   });
 }
 function renderDelta(data) {
-  const key = `role-finder:${data.filename || "resume"}`;
+  const key = `lailnext:${data.filename || "resume"}`;
   const previous = JSON.parse(localStorage.getItem(key) || "null");
   if (previous && typeof previous.score === "number") {
     const delta = +(data.ats.score - previous.score).toFixed(1);

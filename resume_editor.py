@@ -106,8 +106,6 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
             addition = f" Aligned with {role_name} opportunities." + addition
         if apps:
             addition += f" Proficient with confirmed tools including {', '.join(apps)}."
-        if experience_signal:
-            addition += f" Experience profile: {experience_signal}-level."
         return (base + addition).strip()
     if not labels:
         return ""
@@ -115,8 +113,6 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
     text = f"Professional{role_text} with core strengths in {', '.join(labels)}."
     if apps:
         text += f" Proficient with confirmed tools including {', '.join(apps)}."
-    if experience_signal:
-        text += f" Brings a {experience_signal}-level experience profile."
     return text
 
 
@@ -136,7 +132,8 @@ def generate_ai_summary(original_summary, skills, applications, role_name=None, 
         "Use clear business English, strong but accurate wording, and no first-person pronouns. "
         "Preserve the factual substance of the existing summary when one is provided. "
         "Do not invent employers, achievements, metrics, certifications, or experience. "
-        "Do not mention these instructions, confirmed tools, or an AI system. Return only the summary. "
+        "Do not mention these instructions, confirmed tools, an AI system, or an inferred experience-level label. "
+        "Return only the summary. "
         f"Target role: {role_name or 'the target role'}. "
         f"Existing summary: {original_summary or 'None'}. "
         f"Confirmed skills: {labels or 'None'}. Confirmed tools: {apps or 'None'}. "

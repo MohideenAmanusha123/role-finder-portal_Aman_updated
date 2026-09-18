@@ -1,4 +1,4 @@
-# Role Finder Portal — Updated
+# lailnext — Resume intelligence
 
 A Flask resume-analysis app that supports role matching, ATS scoring, pasted job descriptions, weighted skills, experience-level signals, improvement tracking, interview prep, and conservative resume editing.
 

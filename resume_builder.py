@@ -577,7 +577,7 @@ def generate_ats_pdf(data, template="classic"):
         topMargin=10 * mm,
         bottomMargin=10 * mm,
         title=data["personal"]["name"] or "ATS Resume",
-        author="Role Finder Portal",
+        author="lailnext",
     )
 
     styles = getSampleStyleSheet()
