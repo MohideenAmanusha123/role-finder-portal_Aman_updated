@@ -50,8 +50,9 @@ def extract_text(file_path: str) -> str:
         if pdfplumber is None:
             raise RuntimeError("pdfplumber is not installed. Run: pip install pdfplumber")
         chunks = []
+        MAX_PAGES = 40  # resumes are short; this bounds worst-case extraction time
         with pdfplumber.open(file_path) as pdf:
-            for page in pdf.pages:
+            for page in pdf.pages[:MAX_PAGES]:
                 chunks.append(page.extract_text() or "")
         text = "\n".join(chunks).strip()
         if not text:
@@ -195,8 +196,9 @@ def _weighted_match(resume_skills: set, role_info: dict) -> dict:
     }
 
 
-def compute_role_match(resume_skills: set, role_name: str, experience=None) -> dict:
-    role_info = ROLES[role_name]
+def compute_role_match(resume_skills: set, role_name: str, experience=None, roles: dict = None) -> dict:
+    role_catalog = roles if roles is not None else ROLES
+    role_info = role_catalog[role_name]
     match = _weighted_match(resume_skills, role_info)
     signal = experience or {"level": "unknown"}
     modifier = experience_modifier(signal, role_info)
@@ -221,10 +223,11 @@ def compute_role_match(resume_skills: set, role_name: str, experience=None) -> d
     }
 
 
-def match_roles(resume_text: str, top_n: int = None) -> tuple:
+def match_roles(resume_text: str, top_n: int = None, roles: dict = None) -> tuple:
+    role_catalog = roles if roles is not None else ROLES
     resume_skills = find_skills(resume_text, SKILL_VOCABULARY)
     experience = detect_experience_signal(resume_text)
-    results = [compute_role_match(resume_skills, role_name, experience) for role_name in ROLES]
+    results = [compute_role_match(resume_skills, role_name, experience, roles=role_catalog) for role_name in role_catalog]
     results.sort(key=lambda r: r["score"], reverse=True)
     if top_n is None:
         return results, sorted(resume_skills)
@@ -399,8 +402,8 @@ def build_skill_roadmap(current_skills: set, missing_skills: list, missing_requi
     return roadmap
 
 
-def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experience=None) -> dict:
-    match = compute_role_match(resume_skills, role_name, experience)
+def build_role_plan(role_name: str, resume_skills: set, ats_issues: list, experience=None, roles: dict = None) -> dict:
+    match = compute_role_match(resume_skills, role_name, experience, roles=roles)
     missing = match["missing_skills"]
     technical_gaps = [s for s in missing if s not in SOFT_SKILLS]
     soft_gaps = [s for s in missing if s in SOFT_SKILLS]
@@ -457,10 +460,11 @@ def suggest_focus_skills(role_matches: list, top_n: int = 5) -> list:
     return [{"skill": skill, "helps_with": sorted(unlocks[skill])} for skill, _ in ranked]
 
 
-def analyze_text(resume_text: str, target_role: str = None, job_description: str = None) -> dict:
+def analyze_text(resume_text: str, target_role: str = None, job_description: str = None, roles: dict = None) -> dict:
+    role_catalog = roles if roles is not None else ROLES
     resume_text = (resume_text or "").strip()
     health = resume_health_check(resume_text)
-    role_matches, detected_skills = match_roles(resume_text)
+    role_matches, detected_skills = match_roles(resume_text, roles=role_catalog)
     resume_skills = set(detected_skills)
     experience = detect_experience_signal(resume_text)
 
@@ -468,8 +472,8 @@ def analyze_text(resume_text: str, target_role: str = None, job_description: str
     if job_description and jd_skills:
         jd_match = compute_skill_match(resume_skills, jd_skills)
         best_frac = jd_match["score"] / 100
-    elif target_role and target_role in ROLES:
-        best_frac = compute_role_match(resume_skills, target_role, experience)["score"] / 100
+    elif target_role and target_role in role_catalog:
+        best_frac = compute_role_match(resume_skills, target_role, experience, roles=role_catalog)["score"] / 100
     elif role_matches:
         best_frac = role_matches[0]["score"] / 100
     else:
@@ -511,13 +515,13 @@ def analyze_text(resume_text: str, target_role: str = None, job_description: str
                 jd_match["missing_preferred"],
             ),
         }
-    elif target_role and target_role in ROLES:
-        result["target_plan"] = build_role_plan(target_role, resume_skills, ats["issues"], experience)
+    elif target_role and target_role in role_catalog:
+        result["target_plan"] = build_role_plan(target_role, resume_skills, ats["issues"], experience, roles=role_catalog)
     else:
         result["focus_skills"] = suggest_focus_skills(role_matches)
 
     return result
 
 
-def analyze_resume(file_path: str, target_role: str = None, job_description: str = None) -> dict:
-    return analyze_text(extract_text(file_path), target_role=target_role, job_description=job_description)
+def analyze_resume(file_path: str, target_role: str = None, job_description: str = None, roles: dict = None) -> dict:
+    return analyze_text(extract_text(file_path), target_role=target_role, job_description=job_description, roles=roles)
