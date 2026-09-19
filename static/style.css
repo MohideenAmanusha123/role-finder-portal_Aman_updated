@@ -8,6 +8,7 @@
   --stamp-soft: rgba(63, 174, 122, 0.14);
   --amber: #D4AF37;
   --amber-soft: rgba(212, 175, 55, 0.14);
+  --amber-bright: #E9CE7A;
   --error: #E2725B;
   --error-soft: rgba(226, 114, 91, 0.12);
   --hairline: rgba(255, 255, 255, 0.09);
@@ -16,6 +17,15 @@
   --serif: 'Fraunces', Georgia, serif;
   --sans: 'IBM Plex Sans', -apple-system, sans-serif;
   --mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* Motion + elevation: a single considered easing curve and a small,
+     reusable shadow scale used everywhere a panel needs to feel lifted
+     off the page, rather than each component inventing its own shadow. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lift-sm: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset, 0 10px 24px -14px rgba(0, 0, 0, 0.65);
+  --lift-md: 0 1px 0 0 rgba(255, 255, 255, 0.045) inset, 0 20px 48px -20px rgba(0, 0, 0, 0.75);
+  --lift-md-hover: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 26px 60px -18px rgba(0, 0, 0, 0.85);
+  --ring-glow: 0 0 22px -4px rgba(212, 175, 55, 0.35);
 }
 
 * {
@@ -65,6 +75,41 @@ button {
   display: none !important;
 }
 
+/* =========================================================
+   SHARED PANEL ELEVATION
+   Every raised content panel (ATS summary, plan, confirm,
+   preview, interview prep, focus, the resume-builder feature
+   card) shares one hover behavior: a slightly lighter border
+   and a slightly deeper shadow, so the whole page reads as one
+   considered surface system instead of six one-off treatments.
+========================================================= */
+
+.ats-panel,
+.plan-panel,
+.focus-panel,
+.confirm-panel,
+.preview-panel,
+.interview-panel,
+.ats-builder-card {
+  transition: border-color 0.35s var(--ease), box-shadow 0.35s var(--ease), transform 0.35s var(--ease);
+}
+
+.ats-panel:hover,
+.plan-panel:hover,
+.focus-panel:hover,
+.confirm-panel:hover,
+.preview-panel:hover,
+.interview-panel:hover,
+.ats-builder-card:hover {
+  /* Individual sides, not the border-color shorthand: several of these
+     panels use border-left as a colored accent stripe (amber, or stamp
+     green for .preview-panel) that hover must not overwrite. */
+  border-top-color: var(--hairline-strong);
+  border-right-color: var(--hairline-strong);
+  border-bottom-color: var(--hairline-strong);
+  box-shadow: var(--lift-md-hover);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -79,10 +124,22 @@ button {
 
 .masthead {
   padding: 14px 32px;
-  border-bottom: 1px solid var(--hairline);
 
   display: flex;
   align-items: center;
+
+  position: sticky;
+  top: 0;
+  z-index: 40;
+
+  background-color: rgba(10, 10, 11, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  background-image: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.45) 50%, transparent);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 1px;
 }
 
 .masthead__brand {
@@ -376,9 +433,10 @@ main {
   cursor: pointer;
 
   transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.3s var(--ease),
+    background 0.3s var(--ease),
+    box-shadow 0.3s var(--ease),
+    transform 0.3s var(--ease);
 }
 
 .dropzone__inner:hover,
@@ -388,8 +446,12 @@ main {
   background: var(--paper-raised-hover);
 
   box-shadow:
-    0 0 0 1px rgba(212, 175, 55, 0.15),
-    0 12px 32px -12px rgba(212, 175, 55, 0.25);
+    0 0 0 1px rgba(212, 175, 55, 0.18),
+    var(--ring-glow);
+}
+
+.dropzone__inner.is-dragover {
+  transform: scale(1.008);
 }
 
 .dropzone__inner:focus-visible {
@@ -582,11 +644,14 @@ main {
 
   font-size: 14px;
 
+  letter-spacing: 0.01em;
+
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.1s ease;
+    background 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.3s var(--ease),
+    transform 0.15s var(--ease),
+    color 0.2s var(--ease);
 }
 
 .primary-button {
@@ -596,7 +661,7 @@ main {
 
   background: linear-gradient(
     180deg,
-    #E8CB70,
+    var(--amber-bright),
     var(--amber)
   );
 
@@ -604,12 +669,22 @@ main {
 }
 
 .primary-button:hover {
+  background: linear-gradient(
+    180deg,
+    #F2DE96,
+    var(--amber-bright)
+  );
+
   box-shadow:
-    0 4px 16px -4px rgba(212, 175, 55, 0.5);
+    0 6px 22px -6px rgba(212, 175, 55, 0.55),
+    0 0 0 1px rgba(212, 175, 55, 0.3);
+
+  transform: translateY(-1px);
 }
 
 .primary-button:active {
   transform: translateY(1px);
+  box-shadow: 0 2px 8px -4px rgba(212, 175, 55, 0.45);
 }
 
 .secondary-button {
@@ -623,6 +698,13 @@ main {
 .secondary-button:hover {
   border-color: var(--amber);
   color: var(--amber);
+  background: var(--paper-raised-hover);
+  box-shadow: 0 4px 14px -8px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1px);
+}
+
+.secondary-button:active {
+  transform: translateY(0);
 }
 
 .reset-button {
@@ -640,6 +722,11 @@ main {
 .reset-button:hover {
   border-color: var(--amber);
   color: var(--amber);
+  transform: translateY(-1px);
+}
+
+.reset-button:active {
+  transform: translateY(0);
 }
 
 .download-button {
@@ -648,11 +735,13 @@ main {
   font-size: 14px;
   font-weight: 600;
 
+  letter-spacing: 0.01em;
+
   color: #1A1508;
 
   background: linear-gradient(
     180deg,
-    #E8CB70,
+    var(--amber-bright),
     var(--amber)
   );
 
@@ -662,20 +751,31 @@ main {
 }
 
 .download-button:hover {
+  background: linear-gradient(
+    180deg,
+    #F2DE96,
+    var(--amber-bright)
+  );
+
   box-shadow:
-    0 4px 16px -4px rgba(212, 175, 55, 0.5);
+    0 6px 22px -6px rgba(212, 175, 55, 0.55),
+    0 0 0 1px rgba(212, 175, 55, 0.3);
+
+  transform: translateY(-1px);
 }
 
 .download-button:active {
   transform: translateY(1px);
+  box-shadow: 0 2px 8px -4px rgba(212, 175, 55, 0.45);
 }
 
 .download-button:disabled,
 .primary-button:disabled,
 .secondary-button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: default;
   box-shadow: none;
+  transform: none;
 }
 
 
@@ -756,9 +856,7 @@ main {
 
   margin-bottom: 24px;
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -20px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 }
 
 .ats-panel__ring {
@@ -789,7 +887,9 @@ main {
 .ats-panel__ring .ring-value {
   stroke-linecap: round;
 
-  transition: stroke-dashoffset 0.6s ease;
+  transition: stroke-dashoffset 0.8s var(--ease);
+
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 .ats-panel__ring-label {
@@ -906,9 +1006,7 @@ main {
 
   margin-bottom: 24px;
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -20px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 }
 
 .plan-panel__eyebrow {
@@ -1092,9 +1190,7 @@ main {
 
   margin-bottom: 32px;
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -20px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 }
 
 .focus-panel__eyebrow {
@@ -1246,9 +1342,7 @@ main {
 
   animation-delay: var(--card-delay, 0s);
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -22px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 
   transition:
     border-color 0.2s ease,
@@ -1310,10 +1404,13 @@ main {
 
 .role-card__ring .ring-value {
   stroke: var(--tier-color, var(--stamp));
+  color: var(--tier-color, var(--stamp));
 
   stroke-linecap: round;
 
-  transition: stroke-dashoffset 0.6s ease;
+  transition: stroke-dashoffset 0.8s var(--ease);
+
+  filter: drop-shadow(0 0 5px currentColor);
 }
 
 .role-card__ring-label {
@@ -1452,9 +1549,7 @@ main {
 
   margin-bottom: 24px;
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -20px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 }
 
 .confirm-panel__eyebrow {
@@ -2000,9 +2095,7 @@ main {
 
   background: var(--paper-raised);
 
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 16px 40px -22px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--lift-md);
 }
 
 .feature-card-content {
@@ -2126,7 +2219,7 @@ main {
 
   overflow-y: auto;
 
-  background: var(--paper-raised);
+  background: linear-gradient(180deg, var(--paper-raised-hover), var(--paper-raised) 140px);
 
   color: var(--ink);
 
@@ -2137,8 +2230,22 @@ main {
   padding: 28px;
 
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.03);
+    0 32px 80px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 60px -20px rgba(212, 175, 55, 0.18);
+
+  animation: modal-in 0.35s var(--ease);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .ats-modal__header {
@@ -2813,7 +2920,9 @@ main {
 
   line-height: 1;
 
-  color: var(--amber);
+  color: var(--amber-bright);
+
+  text-shadow: 0 0 24px rgba(212, 175, 55, 0.45);
 
   margin-bottom: 10px;
 }

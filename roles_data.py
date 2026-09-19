@@ -8,7 +8,6 @@ To add a new role: add an entry to ROLES with a "skills" list (drawn from,
 or extending, SKILL_VOCABULARY) and a one-line "description".
 """
 
-import json
 import os
 
 # Master list of recognizable skills/keywords across roles.
@@ -259,47 +258,35 @@ for _role_info in ROLES.values():
     _role_info["skills"] = list(dict.fromkeys(_role_info["required"] + _role_info.get("preferred", [])))
 
 
-CUSTOM_ROLES_FILE = os.path.join(os.path.dirname(__file__), "custom_roles.json")
+
+# Custom roles created from a pasted job description are intentionally NOT
+# stored here or written to disk. `ROLES` is the shared, read-only base
+# catalog served to every visitor — mutating it (or persisting to a single
+# JSON file) meant one user's custom role leaked into every other user's
+# dropdown, behaved inconsistently across gunicorn workers, and still didn't
+# survive a redeploy on an ephemeral filesystem. Custom roles now live in the
+# requester's own Flask session (see `_session_roles()` in app.py) — no
+# global mutation, no cross-user leakage, no shared file to go stale.
+#
+# When real user accounts exist, swap the session-backed store for a
+# per-user row in a database (see MAX_CUSTOM_ROLES_PER_SESSION below for the
+# cap that should map to "custom roles per account" at that point).
+
+MAX_CUSTOM_ROLES_PER_SESSION = 10
+MAX_SKILLS_PER_CUSTOM_ROLE = 30
 
 
-def _load_custom_roles(custom_roles_path=None):
-    path = custom_roles_path or CUSTOM_ROLES_FILE
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        return data if isinstance(data, dict) else {}
-    except (json.JSONDecodeError, OSError):
-        return {}
+def build_custom_role(role_name: str, jd_text: str, extracted_skills=None) -> tuple:
+    """Build a JD-derived role definition without touching global state.
 
-
-def _save_custom_roles(custom_roles, custom_roles_path=None):
-    path = custom_roles_path or CUSTOM_ROLES_FILE
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(custom_roles, handle, indent=2, ensure_ascii=False)
-
-
-for _custom_name, _custom_info in _load_custom_roles().items():
-    normalized = {
-        "description": _custom_info.get("description", f"Custom role created from a pasted job description ({len(_custom_info.get('required', []))} recognized skills)."),
-        "level": _custom_info.get("level", "mid"),
-        "required": list(_custom_info.get("required", [])),
-        "preferred": list(_custom_info.get("preferred", [])),
-        "skills": list(_custom_info.get("skills", _custom_info.get("required", []))),
-        "custom": True,
-    }
-    ROLES[_custom_name] = normalized
-
-
-def add_custom_role(role_name: str, jd_text: str, extracted_skills=None, custom_roles_path=None) -> dict:
-    """Add a JD-derived role to ROLES and persist it to a JSON file."""
+    Returns (clean_name, role_info). The caller (app.py) is responsible for
+    where this gets stored — normally the requester's session.
+    """
     import re as _re
     clean_name = _re.sub(r"\s+", " ", (role_name or "").strip())[:80]
     if not clean_name:
         raise ValueError("Role name is required.")
-    skills = sorted(set(extracted_skills or []))
+    skills = sorted(set(extracted_skills or []))[:MAX_SKILLS_PER_CUSTOM_ROLE]
     if not skills:
         raise ValueError("No recognized skills were found in the job description.")
     info = {
@@ -310,9 +297,16 @@ def add_custom_role(role_name: str, jd_text: str, extracted_skills=None, custom_
         "skills": skills,
         "custom": True,
     }
-    ROLES[clean_name] = info
+    return clean_name, info
 
-    custom_roles = _load_custom_roles(custom_roles_path)
-    custom_roles[clean_name] = info
-    _save_custom_roles(custom_roles, custom_roles_path)
-    return {"role": clean_name, "skills": skills, "description": info["description"]}
+
+def merge_roles(custom_roles: dict = None) -> dict:
+    """Return the base catalog merged with a caller-supplied custom-role dict.
+
+    Never mutates ROLES. `custom_roles` is normally `session["custom_roles"]`
+    — scoped to one visitor, so nothing here is shared between users.
+    """
+    merged = dict(ROLES)
+    if custom_roles:
+        merged.update(custom_roles)
+    return merged

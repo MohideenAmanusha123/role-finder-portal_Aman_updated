@@ -251,7 +251,7 @@ function ringSvg(score, radius, strokeColor) {
   const size = radius * 2 + 10, center = size / 2;
   return `<svg viewBox="0 0 ${size} ${size}">
     <circle class="ring-track" cx="${center}" cy="${center}" r="${radius}"></circle>
-    <circle class="ring-value" cx="${center}" cy="${center}" r="${radius}" stroke="${strokeColor}"
+    <circle class="ring-value" cx="${center}" cy="${center}" r="${radius}" stroke="${strokeColor}" style="color: ${strokeColor}"
       stroke-dasharray="${circumference}" stroke-dashoffset="${circumference}" data-final-offset="${offset}"></circle>
   </svg>`;
 }
@@ -448,17 +448,66 @@ function renderRoleList(roles) {
     roleList.appendChild(li);
   });
 }
+// --- Before/after score tracking -------------------------------------
+// This intentionally does NOT store resume text, contact info, or the
+// plaintext filename in localStorage — only a hashed key, the ATS score,
+// and the detected skill list (needed for the "newly detected skills"
+// delta), each with an expiry. Entries older than DELTA_TTL_MS are treated
+// as absent and swept out, so this doesn't accumulate indefinitely on a
+// shared/public machine.
+
+const DELTA_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const DELTA_KEY_PREFIX = "lailnext:delta:";
+
+// Small non-cryptographic hash (FNV-1a) so the localStorage key doesn't
+// contain the person's plaintext filename (which may itself contain a
+// name, e.g. "John_Doe_Resume.pdf") if someone inspects devtools storage.
+function hashKey(value) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function pruneExpiredDeltaEntries() {
+  const now = Date.now();
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(DELTA_KEY_PREFIX)) continue;
+    try {
+      const entry = JSON.parse(localStorage.getItem(key));
+      if (!entry || typeof entry.timestamp !== "number" || now - entry.timestamp > DELTA_TTL_MS) {
+        toRemove.push(key);
+      }
+    } catch {
+      toRemove.push(key);
+    }
+  }
+  toRemove.forEach(key => localStorage.removeItem(key));
+}
+
 function renderDelta(data) {
-  const key = `lailnext:${data.filename || "resume"}`;
-  const previous = JSON.parse(localStorage.getItem(key) || "null");
+  const key = DELTA_KEY_PREFIX + hashKey(data.filename || "resume");
+  let previous = null;
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || "null");
+    if (raw && Date.now() - raw.timestamp <= DELTA_TTL_MS) previous = raw;
+  } catch { /* corrupt entry, treat as absent */ }
+
   if (previous && typeof previous.score === "number") {
     const delta = +(data.ats.score - previous.score).toFixed(1);
     const skillDelta = (data.detected_skills || []).filter(s => !(previous.skills || []).includes(s));
     deltaPanel.hidden = false;
     deltaPanel.textContent = `${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta)} ATS points since last analysis · ${skillDelta.length} newly detected skill${skillDelta.length === 1 ? "" : "s"}`;
   } else deltaPanel.hidden = true;
+
   localStorage.setItem(key, JSON.stringify({ score: data.ats.score, skills: data.detected_skills || [], timestamp: Date.now() }));
 }
+
+pruneExpiredDeltaEntries();
 function renderResults(data) {
   loading.hidden = true; results.hidden = false; lastAnalysisData = data; pendingEditedData = null;
   resultsFilename.textContent = data.filename;
