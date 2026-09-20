@@ -44,7 +44,53 @@
       alt="lailnext — Everything you need for your next role"
     >
   </a>
+
+  <div class="masthead__account">
+    <span id="account-status" class="account-status" hidden></span>
+    <button type="button" id="account-signed-out" class="secondary-button account-button">
+      Sign in
+    </button>
+    <button type="button" id="account-sign-out" class="reset-button account-button" hidden>
+      Sign out
+    </button>
+  </div>
 </header>
+
+<div id="auth-modal" class="ats-modal" hidden>
+  <div class="ats-modal__overlay" id="auth-modal-overlay"></div>
+  <div class="ats-modal__content auth-modal__content" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="ats-modal__header">
+      <div>
+        <p class="ats-builder__eyebrow" id="auth-modal-eyebrow">ACCOUNT</p>
+        <h2 id="auth-modal-title">Sign in</h2>
+        <p id="auth-modal-sub">Custom roles you save will follow you across devices.</p>
+      </div>
+      <button type="button" id="auth-modal-close" class="ats-modal__close" aria-label="Close">×</button>
+    </div>
+
+    <form id="auth-form" novalidate>
+      <div class="builder-field">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" class="text-input" type="email" autocomplete="email" required placeholder="you@example.com">
+      </div>
+      <div class="builder-field">
+        <label for="auth-password">Password</label>
+        <input id="auth-password" class="text-input" type="password" autocomplete="current-password" required placeholder="At least 8 characters">
+      </div>
+
+      <p id="auth-error" class="error-message" hidden role="alert"></p>
+
+      <div class="ats-builder-actions auth-form__actions">
+        <button type="button" id="auth-switch-mode" class="reset-button">
+          New here? Create an account
+        </button>
+        <button type="submit" id="auth-submit" class="primary-button">
+          Sign in
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <main>
 
@@ -1337,7 +1383,7 @@
         <div class="ats-score-card">
 
           <p class="ats-score-label">
-            ATS COMPATIBILITY SCORE
+            RESUME COMPATIBILITY SCORE
           </p>
 
           <div
@@ -1351,6 +1397,10 @@
             id="atsScoreMessage"
             aria-live="polite"
           ></p>
+
+          <p class="ats-score-disclaimer">
+            A keyword-matching and formatting heuristic, not a guarantee from any specific ATS.
+          </p>
 
         </div>
 
@@ -1768,6 +1818,10 @@
   <p>
     Matches are keyword-based. Use them as a decision aid,
     and only add skills or applications you can truthfully support.
+  </p>
+
+  <p>
+    <a href="/privacy" class="footer-link">Privacy &amp; data handling</a>
   </p>
 
 </footer>

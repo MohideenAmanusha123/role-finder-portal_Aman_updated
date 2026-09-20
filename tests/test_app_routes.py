@@ -2,6 +2,7 @@ import io
 import unittest
 
 import app as app_module
+from extensions import limiter
 
 
 def _sample_resume_text():
@@ -31,9 +32,12 @@ class RoleFinderRouteTests(unittest.TestCase):
 
     def setUp(self):
         app_module.app.config["TESTING"] = True
-        # Testing config also disables Flask-Limiter's storage backend
-        # quirks between tests; each test still gets fresh limiter counters
-        # because storage_uri defaults to an in-memory store per process.
+        # The rate limiter's storage is process-global, not per test class,
+        # so without resetting it here, a deliberate rate-limit-flood test
+        # in this file (test_custom_role_route_is_rate_limited) can exhaust
+        # quota that a completely unrelated test file then hits as a
+        # spurious 429. Reset before every test so each one starts clean.
+        limiter.reset()
 
     def test_index_loads(self):
         client = app_module.app.test_client()

@@ -203,7 +203,7 @@ function handleFile(file) {
 }
 
 function setLoadingStage(stage) {
-  const labels = { extract: "Extracting resume text…", detect: "Detecting skills and experience signals…", score: "Scoring role fit and ATS compatibility…", plan: "Building your action plan and interview prep…" };
+  const labels = { extract: "Extracting resume text…", detect: "Detecting skills and experience signals…", score: "Scoring role fit and resume compatibility…", plan: "Building your action plan and interview prep…" };
   loadingMessage.textContent = labels[stage] || "Working…";
   document.querySelectorAll(".loading-steps span").forEach((el) => {
     el.classList.toggle("is-active", el.dataset.step === stage);
@@ -275,8 +275,10 @@ function renderAts(ats) {
   const issuesHtml = ats.issues.length ? `<ul class="ats-panel__issues">${ats.issues.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="ats-panel__clean">No major ATS red flags detected.</p>`;
   atsPanel.innerHTML = `<div class="ats-panel__ring">${ringSvg(ats.score, 39, ratingColor(ats.rating))}
     <div class="ats-panel__ring-label"><span class="ats-panel__ring-score">${ats.score}</span><span class="ats-panel__ring-total">/ 100</span></div></div>
-    <div class="ats-panel__body"><p class="ats-panel__eyebrow">ATS COMPATIBILITY · ${esc(ats.rating.toUpperCase())}</p>
-    <h3 class="ats-panel__title">How well this resume parses for applicant tracking systems</h3>${issuesHtml}</div>`;
+    <div class="ats-panel__body"><p class="ats-panel__eyebrow">RESUME COMPATIBILITY · ${esc(ats.rating.toUpperCase())}</p>
+    <h3 class="ats-panel__title">How well this resume parses for applicant tracking systems</h3>
+    <p class="ats-panel__note">A keyword-matching and formatting heuristic, not a score from any specific ATS product — use it as a directional guide.</p>
+    ${issuesHtml}</div>`;
 }
 function renderPlanSection(title, items, emptyText) {
   if (!items || !items.length) return `<div class="plan-section"><p class="plan-section__title">${title}</p><p class="plan-empty">${emptyText}</p></div>`;
@@ -507,7 +509,132 @@ function renderDelta(data) {
   localStorage.setItem(key, JSON.stringify({ score: data.ats.score, skills: data.detected_skills || [], timestamp: Date.now() }));
 }
 
+// --- Account (sign in / sign up / sign out) ----------------------------
+// Custom roles created while signed in are stored on the account (see
+// /custom-role in app.py); while signed out they fall back to the
+// session-only behavior that existed before accounts did. This block
+// only handles identity -- it doesn't need to know about roles at all,
+// the backend routes it every time a role is created based on whether
+// the request is authenticated.
+
+(function initAccountUI() {
+  const statusEl = document.getElementById("account-status");
+  const signInButton = document.getElementById("account-signed-out");
+  const signOutButton = document.getElementById("account-sign-out");
+  const modal = document.getElementById("auth-modal");
+  const overlay = document.getElementById("auth-modal-overlay");
+  const closeButton = document.getElementById("auth-modal-close");
+  const form = document.getElementById("auth-form");
+  const emailInput = document.getElementById("auth-email");
+  const passwordInput = document.getElementById("auth-password");
+  const errorEl = document.getElementById("auth-error");
+  const switchModeButton = document.getElementById("auth-switch-mode");
+  const submitButton = document.getElementById("auth-submit");
+  const titleEl = document.getElementById("auth-modal-title");
+
+  if (!statusEl || !modal) return; // markup not present, nothing to wire
+
+  let mode = "login"; // or "signup"
+
+  function setMode(newMode) {
+    mode = newMode;
+    if (mode === "signup") {
+      titleEl.textContent = "Create an account";
+      submitButton.textContent = "Create account";
+      switchModeButton.textContent = "Already have an account? Sign in";
+      passwordInput.setAttribute("autocomplete", "new-password");
+    } else {
+      titleEl.textContent = "Sign in";
+      submitButton.textContent = "Sign in";
+      switchModeButton.textContent = "New here? Create an account";
+      passwordInput.setAttribute("autocomplete", "current-password");
+    }
+    errorEl.hidden = true;
+  }
+
+  function openModal() {
+    setMode("login");
+    form.reset();
+    modal.hidden = false;
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+  }
+
+  function reflectSignedIn(email) {
+    statusEl.hidden = false;
+    statusEl.textContent = email;
+    signInButton.hidden = true;
+    signOutButton.hidden = false;
+  }
+
+  function reflectSignedOut() {
+    statusEl.hidden = true;
+    statusEl.textContent = "";
+    signInButton.hidden = false;
+    signOutButton.hidden = true;
+  }
+
+  async function refreshAccountStatus() {
+    try {
+      const response = await fetch("/auth/me");
+      const data = await response.json();
+      if (data.email) reflectSignedIn(data.email);
+      else reflectSignedOut();
+    } catch {
+      reflectSignedOut();
+    }
+  }
+
+  signInButton.addEventListener("click", openModal);
+  closeButton.addEventListener("click", closeModal);
+  overlay.addEventListener("click", closeModal);
+  switchModeButton.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
+
+  signOutButton.addEventListener("click", async () => {
+    try {
+      await fetch("/auth/logout", { method: "POST" });
+    } finally {
+      reflectSignedOut();
+      // Custom roles created while signed in live on the account, not
+      // this browser's role dropdown -- reload so the list reverts to
+      // whatever an anonymous visitor sees (base roles + session roles).
+      location.reload();
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    errorEl.hidden = true;
+    submitButton.disabled = true;
+    try {
+      const endpoint = mode === "signup" ? "/auth/signup" : "/auth/login";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.value.trim(), password: passwordInput.value }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Something went wrong.");
+      reflectSignedIn(data.email);
+      closeModal();
+      // Custom roles on the account may differ from what this session
+      // was showing -- reload so the role dropdown reflects the account.
+      location.reload();
+    } catch (error) {
+      errorEl.hidden = false;
+      errorEl.textContent = error.message;
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  refreshAccountStatus();
+})();
+
 pruneExpiredDeltaEntries();
+
 function renderResults(data) {
   loading.hidden = true; results.hidden = false; lastAnalysisData = data; pendingEditedData = null;
   resultsFilename.textContent = data.filename;

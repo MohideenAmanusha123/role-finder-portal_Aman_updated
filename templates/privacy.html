@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy — lailnext</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    .privacy-doc {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+    .privacy-doc h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(28px, 4vw, 38px);
+      margin: 0 0 8px;
+    }
+    .privacy-doc .updated {
+      font: 12px var(--mono);
+      color: var(--ink-soft);
+      margin: 0 0 36px;
+    }
+    .privacy-doc h2 {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 500;
+      margin: 36px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .privacy-doc p, .privacy-doc li {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink);
+    }
+    .privacy-doc p {
+      margin: 0 0 14px;
+    }
+    .privacy-doc ul {
+      margin: 0 0 14px;
+      padding-left: 22px;
+    }
+    .privacy-doc li {
+      margin-bottom: 8px;
+    }
+    .privacy-doc .muted {
+      color: var(--ink-soft);
+    }
+    .privacy-callout {
+      background: var(--paper-raised);
+      border: 1px solid var(--hairline);
+      border-left: 2px solid var(--stamp);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin: 0 0 20px;
+    }
+    .privacy-callout p {
+      margin: 0;
+      font-size: 14px;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      font: 12px var(--mono);
+      color: var(--amber);
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="masthead">
+  <a class="masthead__brand" href="/" aria-label="lailnext home">
+    <img
+      class="masthead__logo"
+      src="{{ url_for('static', filename='lainext-logo-cropped.png') }}"
+      alt="lailnext — Everything you need for your next role"
+    >
+  </a>
+</header>
+
+<main class="privacy-doc">
+  <a class="back-link" href="/">← Back to lailnext</a>
+
+  <h1>Privacy &amp; data handling</h1>
+  <p class="updated">Plain-language summary — not a substitute for legal advice, but an honest account of what actually happens to your data.</p>
+
+  <div class="privacy-callout">
+    <p><strong>Short version:</strong> your resume is processed to extract text and detect skills, then discarded. Nothing about you — your name, contact details, or resume content — is stored in our database. The only things that persist are: your account email/password (if you create one), any custom roles you save (just the role name and skill list, never your resume), and a small locally-stored browser note used to show your score improving over time.</p>
+  </div>
+
+  <h2>What happens when you upload a resume</h2>
+  <p>When you upload a PDF, DOCX, or TXT file, it's saved to a temporary location on the server just long enough to extract the text from it, then immediately deleted — whether the analysis succeeds or fails. The extracted text is used in-memory to compute your scores and role matches, and is not written to any database or log file.</p>
+
+  <h2>What's sent to an external AI provider</h2>
+  <p>Most of lailnext runs entirely on our own server — role matching, ATS scoring, and skill detection do not call any external AI service.</p>
+  <p>One optional feature is the exception: if you choose <strong>"AI-assisted summary"</strong> when editing your resume, the following — and only the following — is sent to OpenAI (or a self-hosted Ollama model, if configured) to generate a rewritten summary:</p>
+  <ul>
+    <li>Your existing resume summary text (if you have one)</li>
+    <li>The target role name you're applying toward</li>
+    <li>The list of skills and tools you've confirmed you know</li>
+    <li>A general experience-level signal (e.g. "mid" or "senior")</li>
+  </ul>
+  <p class="muted">Your name, contact details, employer names, dates, and the rest of your resume are never included in that request. This feature is off by default — the standard "Update summary" mode rewrites your summary locally without contacting any external service.</p>
+
+  <h2>What we store</h2>
+  <ul>
+    <li><strong>If you don't create an account:</strong> nothing about your resume, analysis, or custom roles is stored anywhere on the server. A custom role you create lasts only for your current browser session.</li>
+    <li><strong>If you create an account:</strong> we store your email address, a securely hashed password (never the password itself), and any custom roles you save (a role name and its skill list — never resume content).</li>
+    <li><strong>In your browser only:</strong> a small note recording your last resume's score and detected skills, used to show whether your score improved the next time you analyze the same file. This is stored in your browser's local storage, never sent to our server, expires automatically after 90 days, and you can clear it any time by clearing your browser's site data.</li>
+  </ul>
+
+  <h2>Deleting your data</h2>
+  <p>Since resume content is never stored, there's nothing to delete on that front. If you have an account and want it and its saved custom roles removed, contact us and we'll delete the account and everything tied to it.</p>
+
+  <h2>Cookies</h2>
+  <p>lailnext uses one functional cookie to keep you signed in (if you create an account) or to remember custom roles for your current session (if you don't). There are no advertising or tracking cookies.</p>
+</main>
+
+</body>
+</html>
