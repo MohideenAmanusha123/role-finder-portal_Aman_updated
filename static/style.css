@@ -2416,6 +2416,37 @@ main {
   font: 11px var(--mono);
 }
 
+.builder-import-notes {
+  flex-basis: 100%;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 6px;
+  background: var(--amber-soft);
+}
+
+.builder-import-notes__title {
+  margin: 0 0 6px;
+  font: 11px var(--mono);
+  letter-spacing: 0.03em;
+  color: var(--amber-bright);
+}
+
+.builder-import-notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.builder-import-notes li {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.builder-import-notes li:last-child {
+  margin-bottom: 0;
+}
+
 .builder-section h3 {
   font-family: var(--serif);
 
