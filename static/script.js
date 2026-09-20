@@ -509,70 +509,28 @@ function renderDelta(data) {
   localStorage.setItem(key, JSON.stringify({ score: data.ats.score, skills: data.detected_skills || [], timestamp: Date.now() }));
 }
 
-// --- Account (sign in / sign up / sign out) ----------------------------
-// Custom roles created while signed in are stored on the account (see
-// /custom-role in app.py); while signed out they fall back to the
-// session-only behavior that existed before accounts did. This block
-// only handles identity -- it doesn't need to know about roles at all,
-// the backend routes it every time a role is created based on whether
-// the request is authenticated.
+// --- Account status (sign in / sign up now live on /login) -------------
+// The masthead just reflects identity here: shows the signed-in email and
+// a sign-out control, or a "Sign in" link to the dedicated /login page.
+// Sign-in/sign-up forms themselves live in templates/login.html, not here.
 
-(function initAccountUI() {
+(function initAccountStatus() {
   const statusEl = document.getElementById("account-status");
-  const signInButton = document.getElementById("account-signed-out");
+  const signInLink = document.getElementById("account-signed-out");
   const signOutButton = document.getElementById("account-sign-out");
-  const modal = document.getElementById("auth-modal");
-  const overlay = document.getElementById("auth-modal-overlay");
-  const closeButton = document.getElementById("auth-modal-close");
-  const form = document.getElementById("auth-form");
-  const emailInput = document.getElementById("auth-email");
-  const passwordInput = document.getElementById("auth-password");
-  const errorEl = document.getElementById("auth-error");
-  const switchModeButton = document.getElementById("auth-switch-mode");
-  const submitButton = document.getElementById("auth-submit");
-  const titleEl = document.getElementById("auth-modal-title");
-
-  if (!statusEl || !modal) return; // markup not present, nothing to wire
-
-  let mode = "login"; // or "signup"
-
-  function setMode(newMode) {
-    mode = newMode;
-    if (mode === "signup") {
-      titleEl.textContent = "Create an account";
-      submitButton.textContent = "Create account";
-      switchModeButton.textContent = "Already have an account? Sign in";
-      passwordInput.setAttribute("autocomplete", "new-password");
-    } else {
-      titleEl.textContent = "Sign in";
-      submitButton.textContent = "Sign in";
-      switchModeButton.textContent = "New here? Create an account";
-      passwordInput.setAttribute("autocomplete", "current-password");
-    }
-    errorEl.hidden = true;
-  }
-
-  function openModal() {
-    setMode("login");
-    form.reset();
-    modal.hidden = false;
-  }
-
-  function closeModal() {
-    modal.hidden = true;
-  }
+  if (!statusEl || !signInLink || !signOutButton) return;
 
   function reflectSignedIn(email) {
     statusEl.hidden = false;
     statusEl.textContent = email;
-    signInButton.hidden = true;
+    signInLink.hidden = true;
     signOutButton.hidden = false;
   }
 
   function reflectSignedOut() {
     statusEl.hidden = true;
     statusEl.textContent = "";
-    signInButton.hidden = false;
+    signInLink.hidden = false;
     signOutButton.hidden = true;
   }
 
@@ -587,11 +545,6 @@ function renderDelta(data) {
     }
   }
 
-  signInButton.addEventListener("click", openModal);
-  closeButton.addEventListener("click", closeModal);
-  overlay.addEventListener("click", closeModal);
-  switchModeButton.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
-
   signOutButton.addEventListener("click", async () => {
     try {
       await fetch("/auth/logout", { method: "POST" });
@@ -604,34 +557,9 @@ function renderDelta(data) {
     }
   });
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    errorEl.hidden = true;
-    submitButton.disabled = true;
-    try {
-      const endpoint = mode === "signup" ? "/auth/signup" : "/auth/login";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailInput.value.trim(), password: passwordInput.value }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Something went wrong.");
-      reflectSignedIn(data.email);
-      closeModal();
-      // Custom roles on the account may differ from what this session
-      // was showing -- reload so the role dropdown reflects the account.
-      location.reload();
-    } catch (error) {
-      errorEl.hidden = false;
-      errorEl.textContent = error.message;
-    } finally {
-      submitButton.disabled = false;
-    }
-  });
-
   refreshAccountStatus();
 })();
+
 
 pruneExpiredDeltaEntries();
 
