@@ -106,8 +106,6 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
             addition = f" Aligned with {role_name} opportunities." + addition
         if apps:
             addition += f" Proficient with confirmed tools including {', '.join(apps)}."
-        if experience_signal:
-            addition += f" Experience profile: {experience_signal}-level."
         return (base + addition).strip()
     if not labels:
         return ""
@@ -115,8 +113,6 @@ def rewrite_summary(original_summary: str, skills, applications, role_name=None,
     text = f"Professional{role_text} with core strengths in {', '.join(labels)}."
     if apps:
         text += f" Proficient with confirmed tools including {', '.join(apps)}."
-    if experience_signal:
-        text += f" Brings a {experience_signal}-level experience profile."
     return text
 
 

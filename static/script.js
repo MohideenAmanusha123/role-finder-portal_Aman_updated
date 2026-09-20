@@ -785,11 +785,14 @@ function bindATSBuilderActions() {
     async function importExistingATSResume(event) {
         const file = event.target.files?.[0];
         const status = document.getElementById("ats-import-status");
+        const notesBox = document.getElementById("ats-import-notes");
+        const notesList = document.getElementById("ats-import-notes-list");
         if (!file) return;
         if (status) {
             status.hidden = false;
             status.textContent = "Reading your resume…";
         }
+        if (notesBox) notesBox.hidden = true;
 
         const formData = new FormData();
         formData.append("resume", file);
@@ -799,6 +802,16 @@ function bindATSBuilderActions() {
             if (!response.ok || !result.success) throw new Error(result.error || "Could not import this resume.");
             populateATSBuilder(result.resume || {});
             if (status) status.textContent = `${result.filename || file.name} imported. Review and edit the fields before previewing.`;
+
+            const notes = result.parse_notes || [];
+            if (notesBox && notesList) {
+                if (notes.length) {
+                    notesList.innerHTML = notes.map((note) => `<li>${esc(note)}</li>`).join("");
+                    notesBox.hidden = false;
+                } else {
+                    notesBox.hidden = true;
+                }
+            }
         } catch (error) {
             if (status) status.textContent = error.message;
         } finally {

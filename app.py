@@ -146,6 +146,7 @@ def import_resume():
 
 
 @app.route("/ats-resume-builder", methods=["POST"])
+@limiter.limit("15 per minute")
 def ats_resume_builder():
 
     try:
