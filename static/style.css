@@ -127,6 +127,7 @@ button {
 
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
   position: sticky;
   top: 0;
@@ -159,6 +160,57 @@ button {
 .masthead__brand:focus-visible {
   outline: 1.5px solid var(--amber);
   outline-offset: 4px;
+}
+
+.masthead__account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-status {
+  font: 12px var(--mono);
+  color: var(--ink-soft);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-button {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.auth-modal__content {
+  width: min(420px, 100%);
+}
+
+.auth-form__actions {
+  justify-content: space-between;
+  align-items: center;
+}
+
+#auth-switch-mode {
+  border: none;
+  background: transparent;
+  color: var(--amber);
+  padding: 8px 0;
+}
+
+#auth-switch-mode:hover {
+  color: var(--amber-bright);
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .masthead {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .account-status {
+    max-width: 140px;
+  }
 }
 
 
@@ -946,6 +998,16 @@ main {
   font-weight: 500;
 
   margin: 0 0 10px;
+}
+
+.ats-panel__note {
+  font-size: 12px;
+
+  color: var(--ink-soft);
+
+  font-style: italic;
+
+  margin: -4px 0 14px;
 }
 
 .ats-panel__issues {
@@ -2942,6 +3004,18 @@ main {
   margin: 0 0 8px;
 }
 
+.ats-score-disclaimer {
+  font-size: 11px;
+
+  color: var(--ink-soft);
+
+  font-style: italic;
+
+  max-width: 320px;
+
+  margin: 6px auto 0;
+}
+
 .ats-builder-score {
   font-family: var(--mono);
 
@@ -3174,6 +3248,16 @@ main {
   font-size: 13px;
 
   color: var(--ink-soft);
+}
+
+.footer-link {
+  color: var(--amber);
+  text-decoration: none;
+  font: 12px var(--mono);
+}
+
+.footer-link:hover {
+  text-decoration: underline;
 }
 
 

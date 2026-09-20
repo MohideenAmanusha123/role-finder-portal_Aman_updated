@@ -10,8 +10,11 @@ import tempfile
 
 from flask import Flask, render_template, request, jsonify, send_file, session
 
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_login import LoginManager, current_user
+
+from extensions import limiter
+from models import db, User, CustomRole
+from auth import auth_bp
 
 from resume_builder import (
     normalize_resume_data,
@@ -64,26 +67,64 @@ app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
 # unsafe — but it's still worth setting explicitly.
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
 
+# --- Database (accounts + per-account custom roles) -------------------
+# Render (like Heroku) hands out DATABASE_URL as "postgres://...", but
+# SQLAlchemy's driver wants "postgresql://...". Rewrite it rather than
+# erroring, so this doesn't silently break the moment a Postgres add-on
+# is attached.
+_db_url = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(os.path.dirname(__file__), 'lailnext.db')}")
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = _db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+# SQLite (the local-dev default) needs its file/tables created; a real
+# Postgres database in production should instead be migrated with a
+# proper tool (Flask-Migrate/Alembic) once the schema needs to evolve
+# without risking data loss -- create_all() is additive-only and safe to
+# run on every boot in the meantime (it never drops or alters a column).
+with app.app_context():
+    db.create_all()
+
 EXTRACTION_TIMEOUT_SECONDS = 15
 
-# Rate limiting. `memory://` keeps counts in-process, which is fine for a
+# Rate limiting. The Limiter instance itself lives in extensions.py (shared
+# with auth.py, to decorate /auth/signup and /auth/login without a circular
+# import); this is where it actually gets attached to the app and
+# configured. `memory://` keeps counts in-process, which is fine for a
 # single instance but is NOT shared across gunicorn workers or dynos — each
 # worker enforces its own limit independently, so the *effective* ceiling is
 # roughly (limit x worker count). That's still far better than no limiting
 # at all, and it's a one-line swap to a shared backend later:
 #   RATELIMIT_STORAGE_URI=redis://<host>:6379
-limiter = Limiter(
-    key_func=get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
-)
+app.config["RATELIMIT_DEFAULT"] = "200 per day;50 per hour"
+app.config["RATELIMIT_STORAGE_URI"] = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+limiter.init_app(app)
+
+app.register_blueprint(auth_bp)
 
 
 def _session_roles():
-    """Base role catalog merged with THIS visitor's session-scoped custom
-    roles. Never touches the global ROLES dict — see roles_data.merge_roles.
+    """Base role catalog merged with this visitor's custom roles.
+
+    Logged-in users: custom roles come from the database (CustomRole rows
+    tied to their account) -- permanent, survives across browsers/devices.
+    Anonymous visitors: falls back to the pre-accounts behavior, custom
+    roles live in the Flask session only (see roles_data.merge_roles).
     """
+    if current_user.is_authenticated:
+        return merge_roles(current_user.custom_roles_dict())
     return merge_roles(session.get("custom_roles"))
 
 
@@ -300,6 +341,11 @@ def index():
     return render_template("index.html", roles=list(_session_roles().keys()), applications=SKILL_APPLICATIONS)
 
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
 def _analyze_uploaded(file, target_role, job_description="", roles=None):
     if file is None or not file.filename:
         raise ValueError("Please select a resume file.")
@@ -378,17 +424,34 @@ def custom_role():
     try:
         clean_name, info = build_custom_role(name, jd, skills)
 
-        # Session-scoped, not global — see roles_data.merge_roles. Cap how
-        # many custom roles one session can accumulate; evict the oldest
-        # when the cap is hit rather than growing the cookie unbounded.
-        custom_roles = session.get("custom_roles", {})
-        custom_roles.pop(clean_name, None)  # re-adding replaces, doesn't duplicate
-        if len(custom_roles) >= MAX_CUSTOM_ROLES_PER_SESSION:
-            oldest = next(iter(custom_roles))
-            custom_roles.pop(oldest)
-        custom_roles[clean_name] = info
-        session["custom_roles"] = custom_roles
-        session.modified = True
+        if current_user.is_authenticated:
+            # Logged in: persist to the account permanently (DB), not the
+            # session -- this is what an account actually buys the user.
+            existing = CustomRole.query.filter_by(user_id=current_user.id, name=clean_name).first()
+            if existing:
+                existing.description = info["description"]
+                existing.skills = info["skills"]
+            else:
+                if len(current_user.custom_roles) >= MAX_CUSTOM_ROLES_PER_SESSION:
+                    oldest = min(current_user.custom_roles, key=lambda r: r.created_at)
+                    db.session.delete(oldest)
+                new_role = CustomRole(user_id=current_user.id, name=clean_name, description=info["description"])
+                new_role.skills = info["skills"]
+                db.session.add(new_role)
+            db.session.commit()
+        else:
+            # Not logged in: session-scoped, not global -- see
+            # roles_data.merge_roles. Cap how many custom roles one
+            # session can accumulate; evict the oldest when the cap is
+            # hit rather than growing the cookie unbounded.
+            custom_roles = session.get("custom_roles", {})
+            custom_roles.pop(clean_name, None)  # re-adding replaces, doesn't duplicate
+            if len(custom_roles) >= MAX_CUSTOM_ROLES_PER_SESSION:
+                oldest = next(iter(custom_roles))
+                custom_roles.pop(oldest)
+            custom_roles[clean_name] = info
+            session["custom_roles"] = custom_roles
+            session.modified = True
 
         return jsonify({"role": clean_name, "skills": info["skills"], "description": info["description"]})
     except ValueError as e:
