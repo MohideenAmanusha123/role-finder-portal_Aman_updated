@@ -41,9 +41,16 @@ class RoleFinderRouteTests(unittest.TestCase):
 
     def test_index_loads(self):
         client = app_module.app.test_client()
+        client.get("/continue-as-guest")  # index() gates on auth-or-guest since /login became the landing page
         resp = client.get("/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b"lailnext", resp.data)
+
+    def test_index_redirects_anonymous_non_guest_visitors_to_login(self):
+        client = app_module.app.test_client()
+        resp = client.get("/", follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/login", resp.headers["Location"])
 
     def test_analyze_text_basic_flow(self):
         client = app_module.app.test_client()
@@ -74,10 +81,12 @@ class RoleFinderRouteTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # Creator sees it in their own role list.
+        client_a.get("/continue-as-guest")
         homepage_a = client_a.get("/")
         self.assertIn(b"Isolation Test Role", homepage_a.data)
 
         # A different session must NOT see it.
+        client_b.get("/continue-as-guest")
         homepage_b = client_b.get("/")
         self.assertNotIn(b"Isolation Test Role", homepage_b.data)
 

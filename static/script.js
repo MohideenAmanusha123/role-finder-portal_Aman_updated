@@ -210,6 +210,22 @@ function setLoadingStage(stage) {
   });
 }
 
+// Reads a fetch response as JSON, but fails with a clear message instead of
+// a cryptic "Unexpected token '<'" if the server (or a hosting platform's
+// proxy, e.g. Render waking a sleeping free-tier instance) returns an HTML
+// error page instead of JSON.
+async function safeJson(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      response.status >= 500 || response.status === 0
+        ? "The server didn't respond correctly — it may still be starting up. Please wait a few seconds and try again."
+        : `Unexpected response from the server (status ${response.status}). Please try again.`
+    );
+  }
+  return response.json();
+}
+
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append("resume", file);
@@ -224,7 +240,7 @@ async function uploadFile(file) {
     await new Promise(r => setTimeout(r, 150));
     setLoadingStage("score");
     const response = await fetch("/analyze", { method: "POST", body: formData });
-    const data = await response.json();
+    const data = await safeJson(response);
     if (!response.ok) throw new Error(data.error || "Something went wrong.");
     setLoadingStage("plan");
     await new Promise(r => setTimeout(r, 150));
@@ -853,7 +869,7 @@ function bindATSBuilderActions() {
         formData.append("resume", file);
         try {
             const response = await fetch("/import-resume", { method: "POST", body: formData });
-            const result = await response.json();
+            const result = await safeJson(response);
             if (!response.ok || !result.success) throw new Error(result.error || "Could not import this resume.");
             populateATSBuilder(result.resume || {});
             if (status) status.textContent = `${result.filename || file.name} imported. Review and edit the fields before previewing.`;
@@ -1481,7 +1497,7 @@ async function previewATSResume() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ resume, job_description: jobDescription, template }),
         });
-        const result = await response.json();
+        const result = await safeJson(response);
         if (!result.success) {
             alert(result.error || "Could not generate preview.");
             return;

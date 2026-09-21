@@ -165,6 +165,36 @@
       margin: 0;
     }
 
+    .login-hero__quote {
+      margin: 28px 0 0;
+      padding: 0 0 0 18px;
+      border-left: 2px solid var(--amber);
+      max-width: 32ch;
+      min-height: 66px;
+    }
+
+    .login-hero__quote p {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink);
+      margin: 0;
+      opacity: 1;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .login-hero__quote p.is-fading {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-hero__quote p {
+        transition: none;
+      }
+    }
+
     /* =========================================================
        RIGHT — the actual form
     ========================================================= */
@@ -355,6 +385,10 @@
       <p class="login-hero__eyebrow">LAILNEXT ACCOUNT</p>
       <h2 class="login-hero__headline">Your roles and progress, wherever you sign in.</h2>
       <p class="login-hero__sub">Save custom roles to your account so they follow you across devices — or skip this and use lailnext without one.</p>
+
+      <blockquote class="login-hero__quote" id="login-quote" aria-live="polite">
+        <p id="login-quote-text">A resume is not a list of what you've done — it's proof of what you can do next.</p>
+      </blockquote>
     </div>
   </div>
 
@@ -390,7 +424,7 @@
 
       <div class="login-divider">or</div>
 
-      <a href="{{ next_url }}" class="login-skip">Continue without an account</a>
+      <a href="/continue-as-guest?next={{ next_url|urlencode }}" class="login-skip">Continue without an account</a>
 
     </div>
   </div>
@@ -453,6 +487,30 @@
       submitButton.textContent = originalLabel;
     }
   });
+
+  // --- Rotating quote --------------------------------------------------
+  // JS-driven crossfade rather than a CSS keyframe loop, so swapping the
+  // text can never land mid-fade or flicker -- it only happens while
+  // fully transparent, then fades back in.
+  const QUOTES = [
+    "A resume is not a list of what you've done — it's proof of what you can do next.",
+    "The right role isn't found by chance. It's matched by evidence.",
+    "Every skill you've used is a sentence in a story someone else hasn't read yet.",
+    "Fit isn't about being the most qualified — it's about being the clearest match.",
+    "Your next role is already visible in what you've already built.",
+  ];
+  const quoteTextEl = document.getElementById("login-quote-text");
+  let quoteIndex = 0;
+  if (quoteTextEl && QUOTES.length > 1) {
+    setInterval(() => {
+      quoteTextEl.classList.add("is-fading");
+      setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % QUOTES.length;
+        quoteTextEl.textContent = QUOTES[quoteIndex];
+        quoteTextEl.classList.remove("is-fading");
+      }, 500);
+    }, 6000);
+  }
 </script>
 
 </body>
