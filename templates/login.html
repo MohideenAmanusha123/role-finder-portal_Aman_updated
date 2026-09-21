@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — lailnext</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+    }
+
+    /* =========================================================
+       LEFT — the one bold moment: an animated compatibility ring
+       with role names drifting around it. Reuses the product's own
+       visual signature (the score ring) rather than a stock hero.
+    ========================================================= */
+
+    .login-hero {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px;
+      overflow: hidden;
+      border-right: 1px solid var(--hairline);
+      background:
+        radial-gradient(ellipse 700px 500px at 30% 50%, rgba(212, 175, 55, 0.10), transparent 65%),
+        var(--paper);
+    }
+
+    .login-hero__ring-wrap {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin-bottom: 48px;
+    }
+
+    .login-hero__ring-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .login-hero__ring-wrap circle {
+      fill: none;
+      stroke-width: 3;
+    }
+
+    .login-hero__ring-track {
+      stroke: var(--hairline);
+    }
+
+    .login-hero__ring-value {
+      stroke: var(--amber);
+      stroke-linecap: round;
+      stroke-dasharray: 754;
+      stroke-dashoffset: 754;
+      filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.55));
+      animation: ring-fill 2.6s var(--ease) 0.3s forwards, ring-pulse 3.5s ease-in-out 3s infinite;
+    }
+
+    @keyframes ring-fill {
+      to { stroke-dashoffset: 130; }
+    }
+
+    @keyframes ring-pulse {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.55)); }
+      50% { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.8)); }
+    }
+
+    .login-hero__ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-hero__ring-score {
+      font-family: var(--mono);
+      font-size: 40px;
+      font-weight: 500;
+      color: var(--amber-bright);
+      opacity: 0;
+      animation: score-in 0.6s ease 2.4s forwards;
+    }
+
+    @keyframes score-in {
+      to { opacity: 1; }
+    }
+
+    .login-hero__ring-label {
+      font: 10px var(--mono);
+      letter-spacing: 0.06em;
+      color: var(--ink-soft);
+      margin-top: 4px;
+    }
+
+    .login-hero__role {
+      position: absolute;
+      font: 11px var(--mono);
+      color: var(--ink-soft);
+      background: var(--paper-raised);
+      border: 1px solid var(--hairline);
+      border-radius: 20px;
+      padding: 5px 12px;
+      opacity: 0;
+      animation: role-drift 14s ease-in-out infinite, role-in 0.6s ease forwards;
+      white-space: nowrap;
+    }
+
+    @keyframes role-in {
+      to { opacity: 0.85; }
+    }
+
+    @keyframes role-drift {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(0, -14px); }
+    }
+
+    .login-hero__role--1 { top: 4%;  left: 55%; animation-delay: 1.8s, 1.8s; }
+    .login-hero__role--2 { top: 24%; left: 80%; animation-delay: 2.1s, 2.1s; animation-duration: 16s, 0.6s; }
+    .login-hero__role--3 { top: 46%; left: 82%; animation-delay: 2.4s, 2.4s; animation-duration: 12s, 0.6s; }
+    .login-hero__role--4 { top: 68%; left: 78%; animation-delay: 2.7s, 2.7s; animation-duration: 15s, 0.6s; }
+    .login-hero__role--5 { top: 86%; left: 52%; animation-delay: 3.0s, 3.0s; animation-duration: 13s, 0.6s; }
+    .login-hero__role--6 { top: 4%;  left: 6%;  animation-delay: 3.3s, 3.3s; animation-duration: 17s, 0.6s; }
+
+    .login-hero__copy {
+      position: relative;
+      z-index: 1;
+      max-width: 34ch;
+    }
+
+    .login-hero__eyebrow {
+      font: 11px var(--mono);
+      letter-spacing: 0.06em;
+      color: var(--amber);
+      margin: 0 0 10px;
+    }
+
+    .login-hero__headline {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(26px, 3vw, 34px);
+      line-height: 1.2;
+      margin: 0 0 12px;
+      color: var(--ink);
+    }
+
+    .login-hero__sub {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+
+    .login-hero__quote {
+      margin: 28px 0 0;
+      padding: 0 0 0 18px;
+      border-left: 2px solid var(--amber);
+      max-width: 32ch;
+      min-height: 66px;
+    }
+
+    .login-hero__quote p {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink);
+      margin: 0;
+      opacity: 1;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .login-hero__quote p.is-fading {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-hero__quote p {
+        transition: none;
+      }
+    }
+
+    /* =========================================================
+       RIGHT — the actual form
+    ========================================================= */
+
+    .login-form-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-card__brand {
+      display: flex;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .login-card__logo {
+      width: 180px;
+      height: auto;
+    }
+
+    .login-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .login-tab {
+      flex: 1;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--ink-soft);
+      padding: 10px 4px;
+      font: 13px var(--mono);
+      cursor: pointer;
+      transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+    }
+
+    .login-tab.is-active {
+      color: var(--amber);
+      border-bottom-color: var(--amber);
+    }
+
+    .login-card h1 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 500;
+      margin: 0 0 6px;
+    }
+
+    .login-card__sub {
+      font-size: 13px;
+      color: var(--ink-soft);
+      margin: 0 0 24px;
+    }
+
+    .login-field {
+      margin-bottom: 16px;
+    }
+
+    .login-field label {
+      display: block;
+      font: 11px var(--mono);
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+
+    #login-error {
+      margin-bottom: 16px;
+    }
+
+    .login-submit {
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+      margin-bottom: 20px;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 0 20px;
+      color: var(--ink-soft);
+      font: 11px var(--mono);
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--hairline);
+    }
+
+    .login-skip {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 11px 15px;
+      border-radius: 5px;
+      border: 1px solid var(--hairline-strong);
+      background: transparent;
+      color: var(--ink);
+      font-size: 14px;
+      text-decoration: none;
+      transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+    }
+
+    .login-skip:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    @media (max-width: 860px) {
+      .login-page {
+        grid-template-columns: 1fr;
+      }
+      .login-hero {
+        border-right: none;
+        border-bottom: 1px solid var(--hairline);
+        padding: 40px 32px;
+        min-height: 44vh;
+      }
+      .login-hero__ring-wrap {
+        width: 180px;
+        height: 180px;
+        margin-bottom: 28px;
+      }
+      .login-hero__ring-score {
+        font-size: 28px;
+      }
+      .login-hero__role {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-hero__ring-value {
+        animation: none;
+        stroke-dashoffset: 130;
+      }
+      .login-hero__ring-score {
+        animation: none;
+        opacity: 1;
+      }
+      .login-hero__role {
+        animation: none;
+        opacity: 0.85;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="login-page">
+
+  <div class="login-hero" aria-hidden="true">
+    <div class="login-hero__ring-wrap">
+      <svg viewBox="0 0 130 130">
+        <circle class="login-hero__ring-track" cx="65" cy="65" r="60"></circle>
+        <circle class="login-hero__ring-value" cx="65" cy="65" r="60"></circle>
+      </svg>
+      <div class="login-hero__ring-center">
+        <span class="login-hero__ring-score">83</span>
+        <span class="login-hero__ring-label">FIT SCORE</span>
+      </div>
+    </div>
+
+    <span class="login-hero__role login-hero__role--1">Backend Developer</span>
+    <span class="login-hero__role login-hero__role--2">DevOps Engineer</span>
+    <span class="login-hero__role login-hero__role--3">Data Analyst</span>
+    <span class="login-hero__role login-hero__role--4">Product Manager</span>
+    <span class="login-hero__role login-hero__role--5">QA Engineer</span>
+    <span class="login-hero__role login-hero__role--6">System Administrator</span>
+
+    <div class="login-hero__copy">
+      <p class="login-hero__eyebrow">LAILNEXT ACCOUNT</p>
+      <h2 class="login-hero__headline">Your roles and progress, wherever you sign in.</h2>
+      <p class="login-hero__sub">Save custom roles to your account so they follow you across devices — or skip this and use lailnext without one.</p>
+
+      <blockquote class="login-hero__quote" id="login-quote" aria-live="polite">
+        <p id="login-quote-text">A resume is not a list of what you've done — it's proof of what you can do next.</p>
+      </blockquote>
+    </div>
+  </div>
+
+  <div class="login-form-side">
+    <div class="login-card">
+
+      <a href="/" class="login-card__brand" aria-label="lailnext home">
+        <img class="login-card__logo" src="{{ url_for('static', filename='lainext-logo-cropped.png') }}" alt="lailnext">
+      </a>
+
+      <div class="login-tabs" role="tablist" aria-label="Sign in or create account">
+        <button type="button" class="login-tab is-active" id="tab-login" role="tab" aria-selected="true">Sign in</button>
+        <button type="button" class="login-tab" id="tab-signup" role="tab" aria-selected="false">Create account</button>
+      </div>
+
+      <h1 id="login-title">Welcome back</h1>
+      <p class="login-card__sub" id="login-sub">Sign in to access your saved custom roles.</p>
+
+      <form id="login-form" novalidate>
+        <div class="login-field">
+          <label for="login-email">Email</label>
+          <input id="login-email" class="text-input" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="login-field">
+          <label for="login-password">Password</label>
+          <input id="login-password" class="text-input" type="password" autocomplete="current-password" required placeholder="At least 8 characters">
+        </div>
+
+        <p id="login-error" class="error-message" hidden role="alert"></p>
+
+        <button type="submit" id="login-submit" class="primary-button login-submit">Sign in</button>
+      </form>
+
+      <div class="login-divider">or</div>
+
+      <a href="/continue-as-guest?next={{ next_url|urlencode }}" class="login-skip">Continue without an account</a>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const tabLogin = document.getElementById("tab-login");
+  const tabSignup = document.getElementById("tab-signup");
+  const titleEl = document.getElementById("login-title");
+  const subEl = document.getElementById("login-sub");
+  const submitButton = document.getElementById("login-submit");
+  const form = document.getElementById("login-form");
+  const emailInput = document.getElementById("login-email");
+  const passwordInput = document.getElementById("login-password");
+  const errorEl = document.getElementById("login-error");
+
+  const NEXT_URL = {{ next_url|tojson }};
+  let mode = "login";
+
+  function setMode(newMode) {
+    mode = newMode;
+    const isSignup = mode === "signup";
+    tabLogin.classList.toggle("is-active", !isSignup);
+    tabLogin.setAttribute("aria-selected", String(!isSignup));
+    tabSignup.classList.toggle("is-active", isSignup);
+    tabSignup.setAttribute("aria-selected", String(isSignup));
+    titleEl.textContent = isSignup ? "Create your account" : "Welcome back";
+    subEl.textContent = isSignup
+      ? "Custom roles you save will follow you across devices."
+      : "Sign in to access your saved custom roles.";
+    submitButton.textContent = isSignup ? "Create account" : "Sign in";
+    passwordInput.setAttribute("autocomplete", isSignup ? "new-password" : "current-password");
+    errorEl.hidden = true;
+  }
+
+  tabLogin.addEventListener("click", () => setMode("login"));
+  tabSignup.addEventListener("click", () => setMode("signup"));
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    errorEl.hidden = true;
+    submitButton.disabled = true;
+    const originalLabel = submitButton.textContent;
+    submitButton.textContent = mode === "signup" ? "Creating account…" : "Signing in…";
+    try {
+      const endpoint = mode === "signup" ? "/auth/signup" : "/auth/login";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.value.trim(), password: passwordInput.value }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Something went wrong.");
+      window.location.href = NEXT_URL;
+    } catch (error) {
+      errorEl.hidden = false;
+      errorEl.textContent = error.message;
+      submitButton.disabled = false;
+      submitButton.textContent = originalLabel;
+    }
+  });
+
+  // --- Rotating quote --------------------------------------------------
+  // JS-driven crossfade rather than a CSS keyframe loop, so swapping the
+  // text can never land mid-fade or flicker -- it only happens while
+  // fully transparent, then fades back in.
+  const QUOTES = [
+    "A resume is not a list of what you've done — it's proof of what you can do next.",
+    "The right role isn't found by chance. It's matched by evidence.",
+    "Every skill you've used is a sentence in a story someone else hasn't read yet.",
+    "Fit isn't about being the most qualified — it's about being the clearest match.",
+    "Your next role is already visible in what you've already built.",
+  ];
+  const quoteTextEl = document.getElementById("login-quote-text");
+  let quoteIndex = 0;
+  if (quoteTextEl && QUOTES.length > 1) {
+    setInterval(() => {
+      quoteTextEl.classList.add("is-fading");
+      setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % QUOTES.length;
+        quoteTextEl.textContent = QUOTES[quoteIndex];
+        quoteTextEl.classList.remove("is-fading");
+      }, 500);
+    }, 6000);
+  }
+</script>
+
+</body>
+</html>

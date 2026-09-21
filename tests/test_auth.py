@@ -105,6 +105,7 @@ class AuthAndAccountRolesTests(unittest.TestCase):
 
         # Gone from view once logged out (falls back to session roles).
         client.post("/auth/logout")
+        client.get("/continue-as-guest")  # index() gates on auth-or-guest; logged out now needs the guest flag
         self.assertNotIn(b"Persistent Role", client.get("/").data)
 
         # Back after logging in again -- proves DB persistence, not session.
@@ -139,6 +140,20 @@ class AuthAndAccountRolesTests(unittest.TestCase):
             matches = CustomRole.query.filter_by(user_id=user.id, name="Dup Role").all()
             self.assertEqual(len(matches), 1)
             self.assertIn("sql", matches[0].skills)
+
+    # --- login-first landing page ------------------------------------------
+
+    def test_authenticated_user_hits_index_directly_no_redirect(self):
+        client = app_module.app.test_client()
+        self._signup(client)
+        resp = client.get("/", follow_redirects=False)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_login_page_redirects_away_once_authenticated(self):
+        client = app_module.app.test_client()
+        self._signup(client)
+        resp = client.get("/login", follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
 
 
 if __name__ == "__main__":

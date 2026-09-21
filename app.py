@@ -8,7 +8,7 @@ import os
 import re
 import tempfile
 
-from flask import Flask, render_template, request, jsonify, send_file, session
+from flask import Flask, render_template, request, jsonify, send_file, session, redirect
 
 from flask_login import LoginManager, current_user
 
@@ -338,12 +338,38 @@ def download_ats_resume():
         }), 500
 @app.route("/")
 def index():
+    if not current_user.is_authenticated and not session.get("guest"):
+        return redirect("/login?next=/")
     return render_template("index.html", roles=list(_session_roles().keys()), applications=SKILL_APPLICATIONS)
 
 
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@app.route("/login")
+def login_page():
+    next_url = request.args.get("next", "/")
+    # Only allow same-site relative paths -- never redirect to an
+    # external URL from a query param (open-redirect protection).
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = "/"
+    if current_user.is_authenticated:
+        return redirect(next_url)
+    return render_template("login.html", next_url=next_url)
+
+
+@app.route("/continue-as-guest")
+def continue_as_guest():
+    # Remembers the choice for this browser session, so someone who skips
+    # sign-in isn't sent back to /login on every subsequent page load --
+    # only on their first visit, or after the session/cookie is cleared.
+    session["guest"] = True
+    next_url = request.args.get("next", "/")
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = "/"
+    return redirect(next_url)
 
 
 def _analyze_uploaded(file, target_role, job_description="", roles=None):
