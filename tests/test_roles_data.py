@@ -59,5 +59,41 @@ class MergeRolesTests(unittest.TestCase):
         self.assertNotIn("Merged Role", ROLES)
 
 
+class ExpandedRoleCatalogTests(unittest.TestCase):
+    """Covers the 8 roles added to broaden the out-of-the-box catalog
+    beyond the original 18 (Full Stack Developer, Cloud Engineer,
+    Cybersecurity Analyst, Mobile App Developer, UX/UI Designer,
+    Digital Marketing Specialist, Database Administrator, Project Manager).
+    """
+
+    NEW_ROLES = [
+        "Full Stack Developer", "Cloud Engineer", "Cybersecurity Analyst",
+        "Mobile App Developer", "UX/UI Designer", "Digital Marketing Specialist",
+        "Database Administrator", "Project Manager",
+    ]
+
+    def test_new_roles_exist_in_catalog(self):
+        for role in self.NEW_ROLES:
+            self.assertIn(role, ROLES)
+
+    def test_new_roles_have_required_fields(self):
+        for role in self.NEW_ROLES:
+            info = ROLES[role]
+            self.assertTrue(info.get("description"))
+            self.assertTrue(info.get("required"))
+            self.assertIn("level", info)
+
+    def test_new_role_skills_are_all_in_the_vocabulary(self):
+        from roles_data import SKILL_VOCABULARY
+        vocab = set(SKILL_VOCABULARY)
+        for role in self.NEW_ROLES:
+            info = ROLES[role]
+            for skill in info.get("required", []) + info.get("preferred", []):
+                self.assertIn(skill, vocab, f"{skill!r} (from {role}) is missing from SKILL_VOCABULARY")
+
+    def test_catalog_grew_from_original_eighteen(self):
+        self.assertGreaterEqual(len(ROLES), 26)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,7 @@ and experience-level signals.
 
 import os
 import re
+from datetime import date
 
 try:
     import pdfplumber
@@ -33,6 +34,89 @@ SENIORITY_RE = {
 }
 SECTION_HEADERS = ["experience", "education", "skills", "projects", "certifications", "summary"]
 CORE_SECTIONS = ["experience", "education", "skills"]
+
+# --- Experience-from-dates -------------------------------------------------
+# Employment date ranges ("Jan 2021 - Present", "2019-2022") are a far more
+# reliable signal than scanning for phrases like "5 years", which miss
+# experience that's only implied by the dates themselves. This parses every
+# date range found anywhere in the resume, merges overlapping spans (so two
+# concurrent roles don't double-count), and sums the total months covered.
+_MONTH_NAMES = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+_MONTH_RE = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*"
+_DATE_TOKEN_RE = rf"(?:{_MONTH_RE}[\s.,-]+)?(\d{{4}})"
+_DATE_RANGE_RE = re.compile(
+    rf"({_MONTH_RE}[\s.,-]+)?(\d{{4}})\s*(?:[-–—]|to|through)\s*"
+    rf"(present|current|(?:{_MONTH_RE}[\s.,-]+)?\d{{4}})",
+    re.I,
+)
+
+
+def _month_index(month_word, year_str):
+    """Convert an optional month name + a year string into an absolute
+    month index (year*12 + month), defaulting to June when no month is
+    given so a bare year doesn't systematically bias toward either end
+    of that year.
+    """
+    year = int(year_str)
+    month = 6
+    if month_word:
+        # "sept" is the only month name where the first-3-letters key
+        # ("sep") is ambiguous with "sep" itself, both map to the same
+        # index anyway, so a straightforward first-3-letters lookup is
+        # safe for every month name this regex can capture.
+        key = re.sub(r"[^a-z]", "", month_word.lower())[:3]
+        month = _MONTH_NAMES.get(key, 6)
+    return year * 12 + month
+
+
+def _years_from_date_ranges(text: str):
+    """Return (total_years, range_count) from every employment-style date
+    range found in the text, or (None, 0) if none were found. Overlapping
+    ranges (e.g. two roles held concurrently, or an internship inside a
+    degree's date range) are merged rather than summed, so total months
+    reflect calendar time covered, not raw addition.
+    """
+    if not text:
+        return None, 0
+
+    today_index = date.today().year * 12 + date.today().month
+    intervals = []
+
+    for match in _DATE_RANGE_RE.finditer(text):
+        start_month_word, start_year, end_raw = match.group(1), match.group(2), match.group(3)
+        start_index = _month_index(start_month_word, start_year)
+
+        if end_raw.lower() in ("present", "current"):
+            end_index = today_index
+        else:
+            end_match = re.match(rf"(?:({_MONTH_RE})[\s.,-]+)?(\d{{4}})", end_raw, re.I)
+            if not end_match:
+                continue
+            end_index = _month_index(end_match.group(1), end_match.group(2))
+
+        if end_index < start_index:
+            continue  # malformed/reversed range -- skip rather than guess
+        if end_index - start_index > 720:  # sanity cap: no single range > 60 years
+            continue
+        intervals.append((start_index, end_index))
+
+    if not intervals:
+        return None, 0
+
+    intervals.sort()
+    merged = [intervals[0]]
+    for start, end in intervals[1:]:
+        last_start, last_end = merged[-1]
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+
+    total_months = sum(end - start for start, end in merged)
+    return round(total_months / 12, 1), len(intervals)
 
 
 class UnsupportedFileType(Exception):
@@ -84,28 +168,87 @@ def _pattern_for(term: str):
     escaped = re.escape(term.lower())
     if re.search(r"[^a-z0-9]", term):
         return re.compile(r"(?<![a-z0-9])" + escaped + r"(?![a-z0-9])", re.I)
-    return re.compile(r"\b" + escaped + r"\b", re.I)
+    # A short list of single-token skill names that are also common,
+    # everyday English words in a form the "s"/"es" suffix would produce
+    # (e.g. "go" -> "goes", the verb) -- these keep exact matching only,
+    # so the plural-tolerance above doesn't trade a false negative for a
+    # much more likely false positive.
+    _PLURAL_SUFFIX_DENYLIST = {"go"}
+    if term.lower() in _PLURAL_SUFFIX_DENYLIST:
+        return re.compile(r"\b" + escaped + r"\b", re.I)
+    # Single-token skills (no spaces, no punctuation) tolerate a trailing
+    # "s" or "es" -- this is deliberately NOT semantic/embedding matching
+    # (that would need a paid API call per analysis, undermining the
+    # rate-limiting/cost-control work done elsewhere); it's a small,
+    # deterministic widening of exact matching to catch the single most
+    # common miss: someone writing the plural ("APIs", "dashboards") where
+    # the vocabulary entry is singular. Multi-word phrases are left exact,
+    # since guessing at plural boundaries inside a phrase risks false
+    # positives that a single trailing "s" on one word does not.
+    return re.compile(r"\b" + escaped + r"(?:es|s)?\b", re.I)
 
 
 _SKILL_PATTERNS = {skill: _pattern_for(skill) for skill in SKILL_VOCABULARY}
 _ALIAS_PATTERNS = {alias: _pattern_for(alias) for alias in SKILL_ALIASES}
 
+# --- Context validation (the third layer, after exact + alias matching) ---
+# A skill keyword appearing in the text isn't automatically evidence the
+# person has it -- "no experience with Kubernetes" or "not proficient in
+# SQL" contain the keyword but mean the opposite. This scans a short window
+# of text immediately before each match for a negation cue, and only
+# discards *that* occurrence -- if the same skill is mentioned elsewhere in
+# the resume without a negation nearby, it still counts.
+_NEGATION_RE = re.compile(
+    r"\b("
+    r"no|not|never|without|"
+    r"(?:no|without|lacking?|limited)\s+(?:prior\s+)?(?:hands[- ]on\s+)?"
+    r"(?:knowledge|experience|exposure|familiarity)\s+(?:of|with|in)?|"
+    r"lack\s+of\s+(?:experience|knowledge)\s*(?:with|in|of)?|"
+    r"not\s+(?:yet\s+)?(?:proficient|familiar|experienced|skilled|comfortable)\s+(?:with|in)|"
+    r"unfamiliar\s+with"
+    r")\s*$",
+    re.I,
+)
+_NEGATION_WINDOW_CHARS = 45
+
+
+def _has_non_negated_match(pattern, text: str) -> bool:
+    """True if `pattern` matches `text` at least once without a negation
+    cue in the preceding ~45 characters. Checks every occurrence, not just
+    the first, so one negated mention doesn't hide a genuine one elsewhere.
+    """
+    for match in pattern.finditer(text):
+        window_start = max(0, match.start() - _NEGATION_WINDOW_CHARS)
+        preceding = text[window_start:match.start()]
+        if _NEGATION_RE.search(preceding):
+            continue
+        return True
+    return False
+
 
 def find_skills(text: str, skill_list=None) -> set:
-    """Detect canonical skills and their aliases."""
+    """Detect canonical skills and their aliases.
+
+    Three layers, in order: (1) exact vocabulary match, (2) alias/synonym
+    match, (3) context validation -- a match preceded by a negation cue
+    ("no experience with X") is not counted as evidence of that skill.
+    Deliberately does not add a fourth, semantic/embedding layer -- see the
+    comment on plural-tolerance in _pattern_for() for why that trade-off
+    isn't made here.
+    """
     skill_list = list(skill_list or SKILL_VOCABULARY)
     text_norm = normalize(text)
     found = set()
 
     for skill in skill_list:
         pattern = _SKILL_PATTERNS.get(skill) or _pattern_for(skill)
-        if pattern.search(text_norm):
+        if _has_non_negated_match(pattern, text_norm):
             found.add(skill)
 
     # Only add aliases that resolve to skills in the requested list.
     allowed = set(skill_list)
     for alias, canonical in SKILL_ALIASES.items():
-        if canonical in allowed and _ALIAS_PATTERNS[alias].search(text_norm):
+        if canonical in allowed and _has_non_negated_match(_ALIAS_PATTERNS[alias], text_norm):
             found.add(canonical)
     return found
 
@@ -117,6 +260,23 @@ def detect_experience_signal(text: str) -> dict:
         if pattern.search(text or ""):
             explicit.append(level)
 
+    date_years, date_range_count = _years_from_date_ranges(text or "")
+
+    # Prefer years calculated from actual employment date ranges over a
+    # bare phrase like "5 years" -- dates are what the person actually
+    # wrote down as fact, a phrase is more easily stale or exaggerated.
+    # Only fall back to the phrase-based figure when no date ranges were
+    # found at all.
+    if date_years is not None:
+        effective_years = date_years
+        years_source = "employment dates"
+    elif years:
+        effective_years = max(years)
+        years_source = "years of experience"
+    else:
+        effective_years = None
+        years_source = None
+
     if explicit:
         if "senior" in explicit:
             level = "senior"
@@ -125,18 +285,18 @@ def detect_experience_signal(text: str) -> dict:
         else:
             level = explicit[0]
         source = "seniority terms"
-    elif years:
-        max_years = max(years)
-        level = "junior" if max_years < 2 else ("mid" if max_years < 5 else "senior")
-        source = "years of experience"
+    elif effective_years is not None:
+        level = "junior" if effective_years < 2 else ("mid" if effective_years < 5 else "senior")
+        source = years_source
     else:
         level, source = "unknown", "not detected"
 
     return {
-        "years": max(years) if years else None,
+        "years": effective_years,
         "level": level,
         "source": source,
         "terms": sorted(set(explicit)),
+        "date_ranges_found": date_range_count,
     }
 
 
@@ -176,14 +336,27 @@ def _weighted_match(resume_skills: set, role_info: dict) -> dict:
     required_ratio = len(matched_required) / len(required) if required else 0.0
     preferred_ratio = len(matched_preferred) / len(preferred) if preferred else 0.0
 
+    # Configurable per role (see roles_data.py / a custom role's "weights"),
+    # defaulting to 70/30 for any role that doesn't specify one. This was
+    # previously hardcoded here, meaning every role -- regardless of how
+    # much precision vs. breadth actually matters for it -- was scored the
+    # same way with no way to see or change that.
+    weights = role_info.get("weights") or {}
+    required_weight = weights.get("required", 70)
+    preferred_weight = weights.get("preferred", 30)
+
     if required and preferred:
-        base_score = required_ratio * 70 + preferred_ratio * 30
+        base_score = required_ratio * required_weight + preferred_ratio * preferred_weight
+        weights_used = {"required": required_weight, "preferred": preferred_weight}
     elif required:
         base_score = required_ratio * 100
+        weights_used = {"required": 100, "preferred": 0}
     elif preferred:
         base_score = preferred_ratio * 100
+        weights_used = {"required": 0, "preferred": 100}
     else:
         base_score = 0.0
+        weights_used = {"required": 0, "preferred": 0}
 
     return {
         "required": sorted(required),
@@ -193,6 +366,7 @@ def _weighted_match(resume_skills: set, role_info: dict) -> dict:
         "missing_required": sorted(missing_required),
         "missing_preferred": sorted(missing_preferred),
         "base_score": base_score,
+        "weights_used": weights_used,
     }
 
 
@@ -218,7 +392,7 @@ def compute_role_match(resume_skills: set, role_name: str, experience=None, role
         "missing_skills": missing,
         "missing_required": match["missing_required"],
         "missing_preferred": match["missing_preferred"],
-        "skill_weights": {"required": 70 if match["preferred"] else 100, "preferred": 30 if match["preferred"] else 0},
+        "skill_weights": match["weights_used"],
         "level": role_info.get("level", "mid"),
     }
 
