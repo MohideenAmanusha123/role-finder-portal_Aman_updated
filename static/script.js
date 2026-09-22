@@ -282,9 +282,15 @@ function renderHealth(h) {
 function renderExperience(signal) {
   if (!signal || (signal.level === "unknown" && !signal.years)) { experiencePanel.hidden = true; return; }
   experiencePanel.hidden = false;
+  const isCalculated = signal.source === "employment dates";
+  const yearsLabel = signal.years != null
+    ? (isCalculated
+        ? `${signal.years} year${signal.years === 1 ? "" : "s"} calculated from employment dates`
+        : `${signal.years}+ years detected`)
+    : "Seniority wording detected";
   experiencePanel.innerHTML = `<span class="insight-panel__label">EXPERIENCE SIGNAL</span>
     <strong>${esc(signal.level.toUpperCase())}</strong>
-    <span>${signal.years != null ? `${signal.years}+ years detected` : "Seniority wording detected"}</span>
+    <span>${esc(yearsLabel)}</span>
     <span class="insight-panel__muted">Used as a small role-fit modifier; it does not replace skills or actual experience.</span>`;
 }
 function renderAts(ats) {
@@ -577,6 +583,66 @@ function renderDelta(data) {
 })();
 
 
+// --- Phase navigation (Analyze / Improve / Create) ----------------------
+// A lightweight wayfinding layer over the existing single-scroll flow --
+// it doesn't change what triggers what (Improve still depends on having
+// analyzed a resume first; Create is still the same modal), it just gives
+// the three phases a persistent, clickable structure instead of leaving
+// the person to infer it purely from scrolling.
+
+(function initPhaseNav() {
+  const navAnalyze = document.getElementById("phase-nav-analyze");
+  const navImprove = document.getElementById("phase-nav-improve");
+  const navCreate = document.getElementById("phase-nav-create");
+  if (!navAnalyze || !navImprove || !navCreate) return;
+
+  const allItems = [navAnalyze, navImprove, navCreate];
+
+  function setActive(item) {
+    allItems.forEach(el => el.classList.toggle("is-active", el === item));
+  }
+
+  function scrollToId(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  navAnalyze.addEventListener("click", () => {
+    setActive(navAnalyze);
+    scrollToId("intake");
+  });
+
+  navImprove.addEventListener("click", () => {
+    const confirmPanelEl = document.getElementById("confirm-panel");
+    const planPanelEl = document.getElementById("plan-panel");
+    const unlocked = (confirmPanelEl && !confirmPanelEl.hidden) || (planPanelEl && !planPanelEl.hidden);
+    if (unlocked) {
+      setActive(navImprove);
+      scrollToId(confirmPanelEl && !confirmPanelEl.hidden ? "confirm-panel" : "plan-panel");
+      return;
+    }
+    // Not unlocked yet -- Improve depends on having analyzed a resume
+    // first. Send them to Analyze instead of scrolling to nothing, and
+    // give the dropzone a brief highlight so the reason is obvious.
+    setActive(navAnalyze);
+    scrollToId("intake");
+    if (dropzoneInner) {
+      dropzoneInner.classList.add("is-dragover");
+      setTimeout(() => dropzoneInner.classList.remove("is-dragover"), 900);
+    }
+  });
+
+  navCreate.addEventListener("click", () => {
+    setActive(navCreate);
+    const openButton = document.getElementById("open-ats-builder");
+    if (openButton) openButton.click();
+  });
+
+  // Once a resume is analyzed, Improve becomes a real destination --
+  // nudge the nav to reflect that phase is now reachable.
+  document.addEventListener("lailnext:analyzed", () => setActive(navImprove));
+})();
+
 pruneExpiredDeltaEntries();
 
 function renderResults(data) {
@@ -589,6 +655,7 @@ function renderResults(data) {
   renderRoleList(data.roles);
   renderRoleComparisonPanel();
   requestAnimationFrame(() => document.querySelectorAll(".ring-value").forEach(c => c.style.strokeDashoffset = c.dataset.finalOffset));
+  document.dispatchEvent(new CustomEvent("lailnext:analyzed"));
 }
 
 resetButton.addEventListener("click", () => {
